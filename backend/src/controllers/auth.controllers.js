@@ -112,7 +112,7 @@ export const updateProfile = async (req, res) => {
       {
         new: true,
       },
-    );
+    ).select("-password");
 
     res.status(201).json({ uploadResponse });
   } catch (err) {
