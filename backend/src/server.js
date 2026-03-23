@@ -4,6 +4,7 @@ import authRoutes from "./routes/auth.routes.js";
 import { connectDb } from "./lib/db.js";
 import { ENV } from "./lib/env.js";
 import cookieParser from "cookie-parser";
+import messageRoutes from "./routes/message.route.js";
 
 const app = express();
 const __dirname = path.resolve();
@@ -15,6 +16,7 @@ app.use(express.json()); //req.body
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/message", messageRoutes);
 
 // make ready for deployment
 if (ENV.NODE_ENV === "production") {
