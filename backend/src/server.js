@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import { connectDb } from "./lib/db.js";
 import { ENV } from "./lib/env.js";
@@ -13,6 +14,7 @@ const PORT = ENV.PORT || 3000;
 
 //payload too large error
 app.use(express.json()); //req.body
+app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
