@@ -3,9 +3,10 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import ChatHeader from "./ChatHeader";
 import NoChatHistoryPlaceholder from "./NoChatHistoryPlaceholder";
+import MessageLoadingSkeleton from "./MessageLoadingSkeleton";
 
 function ChatContainer() {
-  const { messages, getMessagesByUserId, selectedUser } = useChatStore();
+  const { messages, getMessagesByUserId, selectedUser, isMessagesLoading } = useChatStore();
   const { authUser } = useAuthStore();
 
   useEffect(() => {
@@ -16,19 +17,20 @@ function ChatContainer() {
     <>
       <ChatHeader />
       <div className="flex-1 px-6 overflow-y-auto py-8">
-        {messages.length > 0 ? (
+        {messages.length > 0 && isMessagesLoading ? (
           <div className="max-w-3xl mx-auto space-y-6">
             {messages.map((msg) => (
               <div
                 key={msg._id}
-                className={`chat ${msg.senderId === authUser._id} ? "chat-end" : "chat-satrt"`}
+                className={`chat ${msg.senderId === authUser._id ? "chat-end" : "chat-satrt"}`}
               >
                 <div
                   className={`chat-bubble relative 
-                  ${msg.senderId === authUser._id
+                  ${
+                    msg.senderId === authUser._id
                       ? "bg-cyan-600 text-white"
                       : "bg-slate-800 text-slate-200"
-                    }
+                  }
                   `}
                 >
                   {msg.image && (
@@ -46,8 +48,8 @@ function ChatContainer() {
               </div>
             ))}
           </div>
-        ) : (
-          <NoChatHistoryPlaceholder name={authUser.fullName} />
+        ) : isMessagesLoading ? <MessageLoadingSkeleton /> : (
+          <NoChatHistoryPlaceholder name={selectedUser.fullName} />
         )}
       </div>
       <MessageInput />
