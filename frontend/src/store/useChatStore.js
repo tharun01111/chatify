@@ -12,26 +12,22 @@ export const useChatStore = create((set, get) => ({
   isUsersLoading: false,
   isMessagesLoading: false,
   isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
-  isOptimistic: false,
 
   toggleSound: () => {
     localStorage.setItem("isSoundEnabled", !get().isSoundEnabled);
     set({ isSoundEnabled: !get().isSoundEnabled });
   },
-  setActiveTab: (tab) => {
-    set({ activeTab: tab });
-  },
-  setSelectedUser: (user) => {
-    set({ selectedUser: user });
-  },
+
+  setActiveTab: (tab) => set({ activeTab: tab }),
+  setSelectedUser: (selectedUser) => set({ selectedUser }),
+
   getAllContacts: async () => {
     set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/message/contacts");
       set({ allContacts: res.data });
     } catch (error) {
-      console.log(error);
-      toast.error(error.response?.data?.message);
+      toast.error(error.response.data.message);
     } finally {
       set({ isUsersLoading: false });
     }
@@ -42,15 +38,14 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get("/message/chats");
       set({ chats: res.data });
     } catch (error) {
-      console.log(error);
-      toast.error(error.response?.data?.message);
+      toast.error(error.response.data.message);
     } finally {
       set({ isUsersLoading: false });
     }
   },
+
   getMessagesByUserId: async (userId) => {
     set({ isMessagesLoading: true });
-
     try {
       const res = await axiosInstance.get(`/message/${userId}`);
       set({ messages: res.data });
@@ -60,9 +55,11 @@ export const useChatStore = create((set, get) => ({
       set({ isMessagesLoading: false });
     }
   },
+
   sendMessage: async (messageData) => {
     const { selectedUser, messages } = get();
     const { authUser } = useAuthStore.getState();
+
     const tempId = `temp-${Date.now()}`;
 
     const optimisticMessage = {
@@ -72,20 +69,51 @@ export const useChatStore = create((set, get) => ({
       text: messageData.text,
       image: messageData.image,
       createdAt: new Date().toISOString(),
-      isOptimistic: true,
+      isOptimistic: true, // flag to identify optimistic messages (optional)
     };
-    // To get the message before calling the backend waiting for the reply
+    // immidetaly update the ui by adding the message
     set({ messages: [...messages, optimisticMessage] });
+
     try {
       const res = await axiosInstance.post(
         `/message/send/${selectedUser._id}`,
         messageData,
       );
-      set({ messages: messages.concat(res.data), isOptimistic: false });
+      set({ messages: messages.concat(res.data) });
     } catch (error) {
-      //removing optimistic message on failure
+      // remove optimistic message on failure
       set({ messages: messages });
       toast.error(error.response?.data?.message || "Something went wrong");
     }
+  },
+
+  subscribeToMessages: () => {
+    const { selectedUser, isSoundEnabled } = get();
+    if (!selectedUser) return;
+
+    const socket = useAuthStore.getState().socket;
+
+    socket.on("newMessage", (newMessage) => {
+      const isMessageSentFromSelectedUser =
+        newMessage.senderId === selectedUser._id;
+      if (!isMessageSentFromSelectedUser) return;
+
+      const currentMessages = get().messages;
+      set({ messages: [...currentMessages, newMessage] });
+
+      if (isSoundEnabled) {
+        const notificationSound = new Audio("/sounds/notification.mp3");
+
+        notificationSound.currentTime = 0; // reset to start
+        notificationSound
+          .play()
+          .catch((e) => console.log("Audio play failed:", e));
+      }
+    });
+  },
+
+  unsubscribeFromMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    socket.off("newMessage");
   },
 }));
