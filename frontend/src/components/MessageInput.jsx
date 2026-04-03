@@ -52,10 +52,12 @@ function MessageInput() {
             <img
               src={imagePreview}
               alt="Preview"
+              aria-label="Remove selected image"
               className="w-20 h-20 object-cover rounded-lg border border-slate-700"
             />
             <button
               onClick={removeImage}
+              aria-label="Attach image"
               className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-200 hover:bg-slate-700"
               type="button"
             >
@@ -100,6 +102,7 @@ function MessageInput() {
         <button
           type="submit"
           disabled={!text.trim() && !imagePreview}
+          aria-label="Send message"
           className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg px-4 py-2 font-medium hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <SendIcon className="w-5 h-5" />
