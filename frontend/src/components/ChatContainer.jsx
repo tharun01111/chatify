@@ -1,20 +1,23 @@
-import { useEffect, useRef } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import ChatHeader from "./ChatHeader";
 import NoChatHistoryPlaceholder from "./NoChatHistoryPlaceholder";
 import MessageInput from "./MessageInput";
 import MessagesLoadingSkeleton from "./MessageLoadingSkeleton";
+import { useEffect, useRef } from "react";
 
 function ChatContainer() {
-  const {
-    selectedUser,
-    getMessagesByUserId,
-    messages,
-    isMessagesLoading,
-  } = useChatStore();
+  const { selectedUser, getMessagesByUserId, messages, isMessagesLoading } =
+    useChatStore();
   const { authUser } = useAuthStore();
+
   const messageEndRef = useRef(null);
+
+  useEffect(() => {
+    if (messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   useEffect(() => {
     getMessagesByUserId(selectedUser._id);
@@ -41,7 +44,11 @@ function ChatContainer() {
                   }`}
                 >
                   {msg.image && (
-                    <img src={msg.image} alt="Shared" className="rounded-lg h-48 object-cover" />
+                    <img
+                      src={msg.image}
+                      alt="Shared"
+                      className="rounded-lg h-48 object-cover"
+                    />
                   )}
                   {msg.text && <p className="mt-2">{msg.text}</p>}
                   <p className="text-xs mt-1 opacity-75 flex items-center gap-1">
@@ -53,7 +60,7 @@ function ChatContainer() {
                 </div>
               </div>
             ))}
-            {/* 👇 scroll target */}
+            {/* scroll target */}
             <div ref={messageEndRef} />
           </div>
         ) : isMessagesLoading ? (
