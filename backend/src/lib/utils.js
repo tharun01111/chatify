@@ -9,7 +9,7 @@ export const generateToken = (userId, res) => {
   res.cookie("jwt", token, {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true, //!prevents XSS attacks: cross site scripting
-    sameSite: true,
+    sameSite: "strict",
     secure: ENV.NODE_ENV === "production" ? true : false,
   });
   return token;

@@ -14,9 +14,13 @@ function ChatContainer() {
     isMessagesLoading,
     subscribeToMessages,
     unsubscribeFromMessages,
+    loadMoreMessages,
+    isLoadingMore,
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
+
+  const topRef = useRef(null);
 
   useEffect(() => {
     getMessagesByUserId(selectedUser._id);
@@ -31,16 +35,39 @@ function ChatContainer() {
     unsubscribeFromMessages,
   ]);
 
+  const lastMessageId = messages[messages.length - 1]?._id;
+
   useEffect(() => {
-    if (messageEndRef.current) {
+    if (messageEndRef.current && !isLoadingMore) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [lastMessageId, isLoadingMore]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting) {
+          loadMoreMessages(selectedUser._id);
+        }
+      },
+      { threshold: 0.1 },
+    );
+    if (topRef.current) observer.observe(topRef.current);
+
+    return () => observer.disconnect();
+  }, [loadMoreMessages, selectedUser]);
 
   return (
     <>
       <ChatHeader />
       <div className="flex-1 px-6 overflow-y-auto py-8">
+        <div ref={topRef} /> {/* top anchor */}
+        {isLoadingMore && (
+          <div className="flex justify-center">
+            <span className="loading loading-spinner text-cyan-500" />
+          </div>
+        )}
         {messages.length > 0 && !isMessagesLoading ? (
           <div className="max-w-3xl mx-auto space-y-6">
             {messages.map((msg) => (

@@ -4,6 +4,8 @@ import { generateToken } from "../lib/utils.js";
 import { sendWelcomeEmail } from "../emails/emailHandlers.js";
 import { ENV } from "../lib/env.js";
 import cloudinary from "../lib/cloudinary.js";
+import { validateImageSize, validateFileType } from "../lib/validators.js";
+import xss from "xss";
 
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -11,6 +13,7 @@ export const signup = async (req, res) => {
     if (!fullName || !email || !password)
       return res.status(400).json({ message: "All fields are required" });
 
+    const sanitizedName = xss(fullName);
     if (password.length < 6)
       return res
         .status(400)
@@ -32,7 +35,7 @@ export const signup = async (req, res) => {
     const newUser = new User({
       email,
       password: hash,
-      fullName,
+      fullName: sanitizedName,
     });
 
     if (newUser) {
@@ -102,6 +105,17 @@ export const updateProfile = async (req, res) => {
       return res.status(400).json({ message: "Profile pic is required" });
 
     const userId = req.user?._id || req.userId;
+
+    if (!validateFileType(profilePic)) {
+      return res.status(400).json({ message: "Invalid image format..." });
+    }
+
+    if (!validateImageSize(profilePic)) {
+      return res
+        .status(400)
+        .json({ message: "Image too large. Max size 5 mb" });
+    }
+
     const uploadResponse = await cloudinary.uploader.upload(profilePic);
 
     const updatedUser = await User.findByIdAndUpdate(

@@ -29,7 +29,6 @@ export const arcjectProtection = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.log("Arcjet Protection Error: ", err);
-    next();
+    return res.status(500).json({ message: "Arcject error: " + err});
   }
 };
