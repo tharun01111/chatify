@@ -12,6 +12,9 @@ export const useChatStore = create((set, get) => ({
   isUsersLoading: false,
   isMessagesLoading: false,
   isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
+  cursor: null,
+  hasMore: false,
+  isLoadingMore: false,
 
   toggleSound: () => {
     localStorage.setItem("isSoundEnabled", !get().isSoundEnabled);
@@ -45,14 +48,46 @@ export const useChatStore = create((set, get) => ({
   },
 
   getMessagesByUserId: async (userId) => {
-    set({ isMessagesLoading: true });
+    set({
+      messages: [],
+      hasMore: false,
+      isLoadingMore: false,
+      cursor: null,
+      isMessagesLoading: true,
+    });
     try {
       const res = await axiosInstance.get(`/message/${userId}`);
-      set({ messages: res.data });
+      set({
+        messages: res.data.messages,
+        cursor: res.data.messages[0]?._id,
+        hasMore: res.data.hasMore,
+      });
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
     } finally {
       set({ isMessagesLoading: false });
+    }
+  },
+
+  loadMoreMessages: async (userId) => {
+    if (!get().hasMore) return;
+    try {
+      set({ isLoadingMore: true });
+      const cursor = get().cursor;
+      const currentMessage = get().messages;
+
+      const res = await axiosInstance.get(
+        `/message/${userId}?cursor=${cursor}`,
+      );
+      set({
+        messages: [...res.data.messages, ...currentMessage],
+        cursor: res.data.messages[0]?._id,
+        hasMore: res.data.hasMore,
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
+      set({ isLoadingMore: false });
     }
   },
 
@@ -79,7 +114,12 @@ export const useChatStore = create((set, get) => ({
         `/message/send/${selectedUser._id}`,
         messageData,
       );
-      set({ messages: messages.concat(res.data) });
+      const currentMessage = get().messages;
+      set({
+        messages: currentMessage
+          .filter((m) => m._id !== tempId)
+          .concat(res.data),
+      });
     } catch (error) {
       // remove optimistic message on failure
       set({ messages: messages });

@@ -2,6 +2,9 @@ import Message from "../models/Message.js";
 import User from "../models/User.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getRecieverSocketId, io } from "../lib/socket.js";
+import mongoose from "mongoose";
+import { validateFileType, validateImageSize } from "../lib/validators.js";
+import xss from "xss";
 
 export const getAllContacts = async (req, res) => {
   try {
@@ -19,18 +22,31 @@ export const getAllContacts = async (req, res) => {
 export const getMessageByUserId = async (req, res) => {
   try {
     const myId = req.user._id;
+    const { cursor } = req.query;
     const { id: userToChatId } = req.params;
 
     //To get both messsages sent by me and the other user i should use
     //$or operator
-    const messages = await Message.find({
+
+    const query = {
       $or: [
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    });
+      ...(cursor && { _id: { $lt: new mongoose.Types.ObjectId(cursor) } }),
+    };
 
-    res.status(200).json(messages);
+    const messages = await Message.find(query)
+      .sort({ createdAt: -1 })
+      .limit(21);
+
+    const hasMore = messages.length === 21;
+
+    if (hasMore) messages.pop();
+
+    const orderedMessages = messages.reverse();
+
+    res.status(200).json({ messages: orderedMessages, hasMore });
   } catch (err) {
     console.log("Error in getMessages controller: ", err.message);
     res.status(500).json({ message: "Internal server error" });
@@ -43,9 +59,24 @@ export const sendMessage = async (req, res) => {
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
+    const sanitizedText = text ? xss(text) : text;
+
     if (!text && !image) {
       return res.status(400).json({ message: "Text or image is required." });
     }
+
+    if (image) {
+      if (!validateFileType(image)) {
+        return res.status(400).json({ message: "Invalid image format..." });
+      }
+
+      if (!validateImageSize(image)) {
+        return res
+          .status(400)
+          .json({ message: "Image too large. Max size 5 mb" });
+      }
+    }
+
     if (senderId.equals(receiverId)) {
       return res
         .status(400)
@@ -66,7 +97,7 @@ export const sendMessage = async (req, res) => {
     const newMessage = new Message({
       senderId,
       receiverId,
-      text,
+      text: sanitizedText,
       image: imageUrl,
     });
 
@@ -75,9 +106,8 @@ export const sendMessage = async (req, res) => {
     //we will use this function to check if the user is online or not
     const recieverSocketId = getRecieverSocketId(receiverId);
     if (recieverSocketId) {
-      
       io.to(recieverSocketId).emit("newMessage", newMessage);
-    } 
+    }
 
     res.status(201).json(newMessage);
   } catch (error) {
