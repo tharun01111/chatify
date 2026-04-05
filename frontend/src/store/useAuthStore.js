@@ -84,30 +84,57 @@ export const useAuthStore = create((set, get) => ({
 
   connectSocket: () => {
     const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+    const existingSocket = get().socket;
+
+    if (!authUser) return;
+    if (existingSocket?.connected) return;
+    if (existingSocket && !existingSocket.connected) {
+      existingSocket.connect();
+      return;
+    }
 
     const socket = io(BASE_URL, {
-      withCredentials: true, // this ensures cookies are sent with the connection
+      withCredentials: true,
+      autoConnect: false,
     });
-
-    socket.connect();
-
-    set({ socket });
 
     // listen for online users event
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
 
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+
+    socket.on("disconnect", () => {
+      set({ onlineUsers: [] });
+    });
+
+    socket.on("connect_error", (error) => {
+      console.log("Socket connection error:", error.message);
+      set({ onlineUsers: [] });
+      toast.error("Realtime connection failed");
+    });
+
     useChatStore.getState().bindSocketEvents(socket);
     useCallStore.getState().listenToCallEvents(socket);
+
+    set({ socket });
+    socket.connect();
   },
 
   disconnectSocket: () => {
-    if (get().socket?.connected) {
-      useChatStore.getState().unbindSocketEvents(get().socket);
-      useCallStore.getState().unlistenCallEvents(get().socket);
-      get().socket.disconnect();
+    const socket = get().socket;
+
+    if (socket) {
+      useChatStore.getState().unbindSocketEvents(socket);
+      useCallStore.getState().unlistenCallEvents(socket);
+      socket.off("getOnlineUsers");
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+      socket.disconnect();
     }
     set({ socket: null, onlineUsers: [] });
   },
