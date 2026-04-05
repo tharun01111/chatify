@@ -94,12 +94,14 @@ export const sendMessage = async (req, res) => {
       imageUrl = uploadResponse.secure_url;
     }
 
+    const resolvedMessageType = messageType || (image ? "image" : "text");
+
     const newMessage = new Message({
       senderId,
       receiverId,
       text: sanitizedText,
       image: imageUrl,
-      messageType: messageType || "text",
+      messageType: resolvedMessageType, // ✅ auto detected!
       callDuration: callDuration || 0,
       callType: callType || undefined,
     });
@@ -128,6 +130,7 @@ export const getCallHistory = async (req, res) => {
       messageType: "call",
     })
       .sort({ createdAt: -1 })
+      .limit(50) // ✅ added limit!
       .populate("senderId", "fullName profilePic")
       .populate("receiverId", "fullName profilePic");
 
@@ -142,27 +145,27 @@ export const getChatPartners = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
 
-    const messages = await Message.find({
-      $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
+    const sentTo = await Message.distinct("receiverId", {
+      senderId: loggedInUserId,
+    });
+    const receivedFrom = await Message.distinct("senderId", {
+      receiverId: loggedInUserId,
     });
 
-    const chatPartnerIds = [
-      ...new Set(
-        messages.map((msg) =>
-          msg.senderId.toString() === loggedInUserId.toString()
-            ? msg.receiverId.toString()
-            : msg.senderId.toString(),
-        ),
-      ),
+    const partnerIds = [
+      ...new Set([
+        ...sentTo.map((id) => id.toString()),
+        ...receivedFrom.map((id) => id.toString()),
+      ]),
     ];
 
     const chatPartners = await User.find({
-      _id: { $in: chatPartnerIds },
+      _id: { $in: partnerIds },
     }).select("-password");
 
     res.status(200).json(chatPartners);
   } catch (err) {
     console.log("Error in getChatPartners controller: ", err.message);
-    res.status(500).json("Internal Server error");
+    res.status(500).json({ message: "Internal Server error" });
   }
 };

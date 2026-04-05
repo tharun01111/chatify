@@ -15,16 +15,14 @@ const io = new Server(server, {
   },
 });
 
-//apply authentication middleware to all socket connections
 io.use(socketAuthMiddleware);
-
 
 export function getRecieverSocketId(userId) {
   return userSocketMap[userId];
 }
 
-//this is for storing online users
-const userSocketMap = {}; // {userId:socketId}
+const userSocketMap = {};
+export const activeCalls = {}; // ✅ add this! tracks who is in call with who
 
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.user.fullName);
@@ -32,22 +30,27 @@ io.on("connection", (socket) => {
   const userId = socket.userId;
   userSocketMap[userId] = socket.id;
 
-  // Initialize WebRTC Call Handlers
-  setupCallHandlers(io, socket, userSocketMap);
+  setupCallHandlers(io, socket, userSocketMap, activeCalls); // ✅ pass activeCalls
 
-  //io.emit() is used to send events to all connected clients
-  io.emit("getOnlineUsers", Object.keys(userSocketMap)); //all connections
-  // socket.emit()
-  //with socket.on we can listen for any type of events from the clients
+  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
   socket.on("disconnect", () => {
     console.log("A user disconnected: ", socket.user.fullName);
     delete userSocketMap[userId];
-    
-    // Prompt active clients to tear down calls if this disconnected user was their peer
-    socket.broadcast.emit("call_ended_abruptly", { userId });
-    
+
+    // ✅ Only notify the PEER not everyone!
+    const peerId = activeCalls[userId];
+    if (peerId) {
+      const peerSocketId = userSocketMap[peerId];
+      if (peerSocketId) {
+        io.to(peerSocketId).emit("call_ended_abruptly", { userId });
+      }
+      delete activeCalls[userId];
+      delete activeCalls[peerId];
+    }
+
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
-  }); // individual connection
+  });
 });
 
 export { app, io, server };
