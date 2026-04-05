@@ -148,6 +148,14 @@ export const useCallStore = create((set, get) => ({
       return;
     }
 
+    if (reason === "unavailable") {
+      await persistCallLog({
+        peerId: resolvedPeerId,
+        text: "User was offline for video call",
+      });
+      return;
+    }
+
     if (reason === "interrupted") {
       await persistCallLog({
         peerId: resolvedPeerId,
@@ -204,7 +212,7 @@ export const useCallStore = create((set, get) => ({
 
     socket.on("call_failed_offline", () => {
       toast.error("User is offline");
-      void get().finalizeCallLog({ reason: "missed" });
+      void get().finalizeCallLog({ reason: "unavailable" });
       get().resetCallState();
     });
 

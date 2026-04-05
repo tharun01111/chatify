@@ -3,7 +3,7 @@ import path from "path";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import messageRoutes from "./routes/message.route.js";
-import streamRoutes from "./routes/stream.routes.js"; // ✅ add this
+import streamRoutes from "./routes/stream.routes.js";
 import { connectDb } from "./lib/db.js";
 import { ENV } from "./lib/env.js";
 import cookieParser from "cookie-parser";
@@ -18,7 +18,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/message", messageRoutes);
-app.use("/api/stream", streamRoutes); // ✅ add this
+app.use("/api/stream", streamRoutes);
 
 if (ENV.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));

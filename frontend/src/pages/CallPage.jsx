@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   SpeakerLayout,
   StreamCall,
@@ -107,6 +108,7 @@ export default function CallPage() {
   const clientRef = useRef(null);
   const callRef = useRef(null);
   const hasExitedRef = useRef(false);
+  const hasRedirectedForMissingStateRef = useRef(false);
 
   const exitCall = useCallback(
     async ({ endForAll = false, notifyPeer = false, shouldNavigate = true }) => {
@@ -256,7 +258,16 @@ export default function CallPage() {
         });
       }
     };
-  }, [authUser, callId, exitCall, markCallActive, navigate, peerId, resetCallState, socket]);
+  }, [
+    authUser,
+    callId,
+    exitCall,
+    markCallActive,
+    navigate,
+    peerId,
+    resetCallState,
+    socket,
+  ]);
 
   useEffect(() => {
     if (!socket || !peerId) return;
@@ -303,8 +314,21 @@ export default function CallPage() {
     }
   }, [callId, callStatus, currentCallId, isLoading, navigate]);
 
+  useEffect(() => {
+    if (isLoading || (client && call)) {
+      hasRedirectedForMissingStateRef.current = false;
+      return;
+    }
+
+    if (hasRedirectedForMissingStateRef.current) return;
+
+    hasRedirectedForMissingStateRef.current = true;
+    toast.error("Unable to load call");
+    navigate("/", { replace: true });
+  }, [call, client, isLoading, navigate]);
+
   if (isLoading) return <PageLoader />;
-  if (!client || !call) return null;
+  if (!client || !call) return <PageLoader />;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950">
