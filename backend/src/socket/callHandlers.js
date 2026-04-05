@@ -6,6 +6,8 @@ export const setupCallHandlers = (io, socket, userSocketMap, activeCalls) => {
     if (callerId === targetUserId) return;
     const targetSocketId = userSocketMap[targetUserId];
     if (targetSocketId) {
+      // Track pending call so disconnect during ringing can notify peer
+      activeCalls[callerId] = targetUserId;
       io.to(targetSocketId).emit("call_incoming", {
         callerId,
         callerName: socket.user?.fullName || "User",
@@ -29,6 +31,8 @@ export const setupCallHandlers = (io, socket, userSocketMap, activeCalls) => {
   });
 
   socket.on("call_reject", ({ targetUserId, reason }) => {
+    delete activeCalls[callerId];
+    delete activeCalls[targetUserId];
     const targetSocketId = userSocketMap[targetUserId];
     if (targetSocketId) {
       io.to(targetSocketId).emit("call_rejected", {
