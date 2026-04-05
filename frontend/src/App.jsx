@@ -6,6 +6,8 @@ import PageLoader from "./components/PageLoader";
 import { useAuthStore } from "./store/useAuthStore";
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
+import IncomingCallModal from "./components/IncomingCallModal";
+import CallScreen from "./components/CallScreen";
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
@@ -40,6 +42,8 @@ function App() {
         />
       </Routes>
       <Toaster />
+      <IncomingCallModal />
+      <CallScreen />
     </div>
   );
 }

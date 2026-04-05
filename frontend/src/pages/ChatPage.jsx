@@ -4,11 +4,22 @@ import ProfileHeader from "../components/ProfileHeader";
 import ActiveTabSwitch from "../components/AcitveTabSwitch.jsx"
 import ChatList from "../components/ChatList";
 import ContactList from "../components/ContactList";
+import CallList from "../components/CallList";
 import ChatContainer from "../components/ChatContainer";
 import NoConversationPlaceholder from "../components/NoConversationPlaceholder";
 
 function ChatPage() {
   const { activeTab, selectedUser } = useChatStore();
+  
+  const renderSidebarContent = () => {
+    switch(activeTab) {
+      case "chats": return <ChatList />;
+      case "contacts": return <ContactList />;
+      case "calls": return <CallList />;
+      default: return <ChatList />;
+    }
+  };
+
   return (
     <div className="relative w-full max-w-6xl h-[650px]">
       <BorderAnimatedContainer>
@@ -17,7 +28,7 @@ function ChatPage() {
           <ProfileHeader />
           <ActiveTabSwitch/>
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {activeTab === "chats" ? <ChatList /> : <ContactList />}
+            {renderSidebarContent()}
           </div>
         </div>
         {/* Right Side */}

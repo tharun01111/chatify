@@ -55,13 +55,13 @@ export const getMessageByUserId = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { text, image } = req.body;
+    const { text, image, messageType, callDuration, callType } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
     const sanitizedText = text ? xss(text) : text;
 
-    if (!text && !image) {
+    if (!text && !image && messageType !== "call") {
       return res.status(400).json({ message: "Text or image is required." });
     }
 
@@ -99,6 +99,9 @@ export const sendMessage = async (req, res) => {
       receiverId,
       text: sanitizedText,
       image: imageUrl,
+      messageType: messageType || "text",
+      callDuration: callDuration || 0,
+      callType: callType || undefined,
     });
 
     await newMessage.save();
@@ -113,6 +116,25 @@ export const sendMessage = async (req, res) => {
   } catch (error) {
     console.log("Error occured in sendMessage controller: ", error.message);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getCallHistory = async (req, res) => {
+  try {
+    const myId = req.user._id;
+
+    const callLogs = await Message.find({
+      $or: [{ senderId: myId }, { receiverId: myId }],
+      messageType: "call",
+    })
+      .sort({ createdAt: -1 })
+      .populate("senderId", "fullName profilePic")
+      .populate("receiverId", "fullName profilePic");
+
+    res.status(200).json(callLogs);
+  } catch (err) {
+    console.log("Error in getCallHistory: ", err.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 

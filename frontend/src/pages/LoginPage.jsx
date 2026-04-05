@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import BorderAnimatedContainer from "../components/BorderAnimatedContainer";
+import PageLoader from "../components/PageLoader";
 import {
   MessageCircleIcon,
   LockIcon,
   MailIcon,
   LoaderIcon,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 
 function LoginPage() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
@@ -18,16 +19,16 @@ function LoginPage() {
 
   console.log({ authUser });
 
-    const [formData, setFormData] = useState({
-      email: "",
-      password: "",
-    });
-    const { login, isLoggingIn } = useAuthStore();
-  
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      login(formData);
-    };
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const { login, isLoggingIn } = useAuthStore();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    login(formData);
+  };
 
   if (isCheckingAuth) return <PageLoader />;
   return (

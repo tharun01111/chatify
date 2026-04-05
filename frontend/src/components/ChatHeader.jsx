@@ -1,12 +1,15 @@
-import { XIcon } from "lucide-react";
+import { X, Phone, Video } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
 import { useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore";
+import { useCallStore } from "../store/useCallStore";
 
 function ChatHeader() {
   const { selectedUser, setSelectedUser } = useChatStore();
+  const { initiateCall, callStatus } = useCallStore();
   const { onlineUsers } = useAuthStore();
   const isOnline = onlineUsers.includes(selectedUser._id);
+  const canCall = isOnline && callStatus === "idle";
 
   useEffect(() => {
     const handleEscKey = (event) => {
@@ -44,9 +47,25 @@ function ChatHeader() {
         </div>
       </div>
 
-      <button onClick={() => setSelectedUser(null)}>
-        <XIcon className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
-      </button>
+      <div className="flex gap-3">
+        <button
+          onClick={() => initiateCall(selectedUser, "audio")}
+          disabled={!canCall}
+          className="p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Phone className="w-5 h-5 text-green-400" />
+        </button>
+        <button
+          onClick={() => initiateCall(selectedUser, "video")}
+          disabled={!canCall}
+          className="p-2 bg-slate-800/50 border-r border-slate-700 pr-5 mr-2 hover:bg-slate-700/50 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Video className="w-5 h-5 text-blue-400" />
+        </button>
+        <button onClick={() => setSelectedUser(null)}>
+          <X className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
+        </button>
+      </div>
     </div>
   );
 }

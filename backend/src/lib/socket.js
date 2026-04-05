@@ -3,6 +3,7 @@ import http from "http";
 import express from "express";
 import { ENV } from "./env.js";
 import { socketAuthMiddleware } from "../middleware/socket.Auth.Middleware.js";
+import { setupCallHandlers } from "../socket/callHandlers.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -31,6 +32,9 @@ io.on("connection", (socket) => {
   const userId = socket.userId;
   userSocketMap[userId] = socket.id;
 
+  // Initialize WebRTC Call Handlers
+  setupCallHandlers(io, socket, userSocketMap);
+
   //io.emit() is used to send events to all connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap)); //all connections
   // socket.emit()
@@ -38,6 +42,10 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("A user disconnected: ", socket.user.fullName);
     delete userSocketMap[userId];
+    
+    // Prompt active clients to tear down calls if this disconnected user was their peer
+    socket.broadcast.emit("call_ended_abruptly", { userId });
+    
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   }); // individual connection
 });

@@ -5,6 +5,7 @@ import {
   getMessageByUserId,
   sendMessage,
   getChatPartners,
+  getCallHistory,
 } from "../controllers/messageControllers.js";
 import { arcjectProtection } from "../middleware/arcjet.middleware.js";
 
@@ -13,6 +14,7 @@ router.use(arcjectProtection ,protectRoute);
 
 router.get("/contacts", getAllContacts);
 router.get("/chats", getChatPartners);
+router.get("/calls", getCallHistory);
 router.get("/:id", getMessageByUserId);
 router.post("/send/:id", sendMessage);
 
