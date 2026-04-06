@@ -216,7 +216,13 @@ export const useCallStore = create((set, get) => ({
       get().resetCallState();
     });
 
-    socket.on("call_rejected", (data) => {
+    socket.on("call_rejected", (data = {}) => {
+      if (!data || typeof data !== "object") {
+        useChatStore.getState().removeTemporaryCallLog(get().activePeerId);
+        get().resetCallState();
+        return;
+      }
+
       const rejectionReason = data.reason || "declined";
       toast(
         rejectionReason === "busy"

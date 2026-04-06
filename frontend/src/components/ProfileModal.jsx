@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, LogOut, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store/useAuthStore";
@@ -9,6 +9,55 @@ function ProfileModal({ onClose }) {
   const [fullName, setFullName] = useState(authUser?.fullName || "");
   const [bio, setBio] = useState(authUser?.bio || "");
   const fileInputRef = useRef(null);
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    const previousFocusedElement = document.activeElement;
+    const modalElement = modalRef.current;
+
+    if (!modalElement) return undefined;
+
+    const getFocusableElements = () =>
+      Array.from(
+        modalElement.querySelectorAll(
+          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("disabled"));
+
+    const focusableElements = getFocusableElements();
+    focusableElements[0]?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const elements = getFocusableElements();
+      if (elements.length === 0) return;
+
+      const firstElement = elements[0];
+      const lastElement = elements[elements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocusedElement?.focus?.();
+    };
+  }, [onClose]);
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -36,7 +85,9 @@ function ProfileModal({ onClose }) {
       }
 
       onClose();
-    } catch {
+    } catch (error) {
+      console.error("Failed to save profile changes", error);
+      toast.error("Failed to save profile changes");
       return;
     }
   };
@@ -54,6 +105,7 @@ function ProfileModal({ onClose }) {
       aria-modal="true"
     >
       <div
+        ref={modalRef}
         className="w-full max-w-sm rounded-2xl overflow-hidden slide-in"
         style={{
           background: "var(--bg-card)",
@@ -126,8 +178,9 @@ function ProfileModal({ onClose }) {
             <textarea
               id="profile-bio"
               value={bio}
-              onChange={(event) => setBio(event.target.value)}
+              onChange={(event) => setBio(event.target.value.slice(0, 160))}
               rows={2}
+              maxLength={160}
               placeholder="Tell people about yourself..."
               className="input-plain resize-none"
               style={{ lineHeight: 1.5 }}

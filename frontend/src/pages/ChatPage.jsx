@@ -10,7 +10,7 @@ function ChatPage() {
   const [showProfile, setShowProfile] = useState(false);
 
   return (
-    <div className="flex w-screen h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="chat-shell flex w-screen h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <div className={`${selectedUser ? "hidden md:flex" : "flex"} h-full`}>
         <Sidebar onOpenProfile={() => setShowProfile(true)} />
       </div>

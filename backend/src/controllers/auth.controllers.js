@@ -50,8 +50,9 @@ export const signup = async (req, res) => {
     });
 
     if (newUser) {
-      generateToken(newUser._id, res);
       await newUser.save();
+      generateToken(newUser._id, res);
+
       res.status(201).json({
         _id: newUser._id,
         fullName: newUser.fullName,
@@ -74,7 +75,11 @@ export const signup = async (req, res) => {
       return res.status(409).json({ message: "User already exists..." });
     }
 
-    console.log("Error in SignUp controller " + error);
+    console.error({
+      message: "Error in SignUp controller",
+      email: req.body?.email,
+      error,
+    });
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -107,7 +112,7 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in login controller " + error);
-    res.status(500).json("Internal server error");
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -134,11 +139,11 @@ export const updateProfile = async (req, res) => {
     }
 
     if (typeof bio === "string") {
-      const sanitizedProfileBio = xss(sanitizeBio(bio));
-
-      if (sanitizedProfileBio.length > 160) {
+      if (bio.length > 160) {
         return res.status(400).json({ message: "Bio must be 160 characters or less" });
       }
+
+      const sanitizedProfileBio = xss(sanitizeBio(bio));
 
       updates.bio = sanitizedProfileBio;
     }
@@ -154,8 +159,13 @@ export const updateProfile = async (req, res) => {
           .json({ message: "Image too large. Max size 5 mb" });
       }
 
-      const uploadResponse = await cloudinary.uploader.upload(profilePic);
-      updates.profilePic = uploadResponse.secure_url;
+      try {
+        const uploadResponse = await cloudinary.uploader.upload(profilePic);
+        updates.profilePic = uploadResponse.secure_url;
+      } catch (error) {
+        console.error("Cloudinary upload failed while updating profile", error);
+        return res.status(502).json({ message: "Failed to upload profile image" });
+      }
     }
 
     if (Object.keys(updates).length === 0) {
@@ -171,7 +181,7 @@ export const updateProfile = async (req, res) => {
       },
     ).select("-password");
 
-    res.status(201).json(updatedUser);
+    res.status(200).json(updatedUser);
   } catch (err) {
     console.log("Error in update profile: ", err);
     res.status(500).json({ message: "Internal server error" });

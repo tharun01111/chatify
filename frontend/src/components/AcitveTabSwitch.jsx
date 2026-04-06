@@ -15,6 +15,7 @@ function ActiveTabSwitch() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
+              aria-pressed={active}
               className="flex-1 py-1.5 rounded-lg text-xs font-bold tracking-wide capitalize transition-all duration-200"
               style={{
                 fontFamily: "'Syne', sans-serif",

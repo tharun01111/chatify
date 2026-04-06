@@ -13,11 +13,8 @@ function ContactList({ search = "" }) {
 
   useEffect(() => {
     setContactSearch(search);
-  }, [search, setContactSearch]);
-
-  useEffect(() => {
-    getAllContacts();
-  }, [getAllContacts, search]);
+    getAllContacts(search);
+  }, [getAllContacts, search, setContactSearch]);
 
   if (isUsersLoading) return <UsersLoadingSkeleton />;
   if (allContacts.length === 0)
@@ -33,10 +30,7 @@ function ContactList({ search = "" }) {
         <button
           key={contact._id}
           onClick={() => setSelectedUser(contact)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150"
-          style={{ background: 'transparent', border: '1px solid transparent' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
+          className="contact-button w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150"
         >
           <div
             className="size-10 rounded-full overflow-hidden flex-shrink-0"

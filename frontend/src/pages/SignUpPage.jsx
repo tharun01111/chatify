@@ -1,15 +1,47 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { Loader2, Lock, Mail, MessageCircle, User } from "lucide-react";
 import BorderAnimatedContainer from "../components/BorderAnimatedContainer";
 import { useAuthStore } from "../store/useAuthStore";
 
 function SignUpPage() {
   const [formData, setFormData] = useState({ fullName: "", email: "", password: "" });
+  const [formErrors, setFormErrors] = useState({});
   const { signup, isSigningUp } = useAuthStore();
 
   const handleSubmit = (event) => {
     event.preventDefault();
+
+    const nextErrors = {};
+
+    if (!formData.fullName.trim()) nextErrors.fullName = "Full name is required";
+
+    if (!formData.email.trim()) {
+      nextErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      nextErrors.email = "Enter a valid email";
+    }
+
+    if (!formData.password) {
+      nextErrors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      nextErrors.password = "Password must be at least 6 characters";
+    }
+
+    setFormErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      const firstInvalidFieldId = nextErrors.fullName
+        ? "signup-full-name"
+        : nextErrors.email
+          ? "signup-email"
+          : "signup-password";
+      document.getElementById(firstInvalidFieldId)?.focus();
+      toast.error(Object.values(nextErrors)[0]);
+      return;
+    }
+
     signup(formData);
   };
 
@@ -42,11 +74,15 @@ function SignUpPage() {
                         id="signup-full-name"
                         type="text"
                         value={formData.fullName}
-                        onChange={(event) => setFormData({ ...formData, fullName: event.target.value })}
+                        onChange={(event) => {
+                          setFormData({ ...formData, fullName: event.target.value });
+                          setFormErrors((current) => ({ ...current, fullName: "" }));
+                        }}
                         className="input"
                         placeholder="John Doe"
                       />
                     </div>
+                    {formErrors.fullName && <p className="mt-2 text-xs" style={{ color: "var(--danger)" }}>{formErrors.fullName}</p>}
                   </div>
 
                   <div>
@@ -57,11 +93,15 @@ function SignUpPage() {
                         id="signup-email"
                         type="email"
                         value={formData.email}
-                        onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+                        onChange={(event) => {
+                          setFormData({ ...formData, email: event.target.value });
+                          setFormErrors((current) => ({ ...current, email: "" }));
+                        }}
                         className="input"
                         placeholder="you@example.com"
                       />
                     </div>
+                    {formErrors.email && <p className="mt-2 text-xs" style={{ color: "var(--danger)" }}>{formErrors.email}</p>}
                   </div>
 
                   <div>
@@ -72,11 +112,15 @@ function SignUpPage() {
                         id="signup-password"
                         type="password"
                         value={formData.password}
-                        onChange={(event) => setFormData({ ...formData, password: event.target.value })}
+                        onChange={(event) => {
+                          setFormData({ ...formData, password: event.target.value });
+                          setFormErrors((current) => ({ ...current, password: "" }));
+                        }}
                         className="input"
                         placeholder="Min. 6 characters"
                       />
                     </div>
+                    {formErrors.password && <p className="mt-2 text-xs" style={{ color: "var(--danger)" }}>{formErrors.password}</p>}
                   </div>
 
                   <button type="submit" className="auth-btn" disabled={isSigningUp}>

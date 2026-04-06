@@ -3,6 +3,7 @@ function BorderAnimatedContainer({ children }) {
     <div
       className="w-full h-full flex overflow-hidden rounded-2xl animate-border"
       style={{
+        "--border-angle": "0deg",
         background: `
           linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
           conic-gradient(

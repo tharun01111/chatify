@@ -33,10 +33,11 @@ function ProfileHeader() {
     };
   };
 
-  const iconBtn = (onClick, title, children) => (
+  const iconBtn = ({ onClick, ariaLabel, ariaPressed, children }) => (
     <button
       onClick={onClick}
-      title={title}
+      aria-label={ariaLabel}
+      aria-pressed={ariaPressed}
       className="size-8 rounded-lg flex items-center justify-center transition-all duration-150"
       style={{ color: "var(--fg-subtle)", background: "transparent" }}
       onMouseEnter={(e) => {
@@ -63,6 +64,7 @@ function ProfileHeader() {
             className="size-9 rounded-full overflow-hidden relative group focus:outline-none"
             onClick={() => fileInputRef.current.click()}
             disabled={isUpdatingImage}
+            aria-label="Upload avatar"
             style={{
               border: "2px solid var(--accent-border)",
               boxShadow: "0 0 10px var(--accent-glow)",
@@ -112,18 +114,19 @@ function ProfileHeader() {
       </div>
 
       <div className="flex items-center gap-0.5">
-        {iconBtn(
-          () => {
+        {iconBtn({
+          onClick: () => {
             const mouseClickSound = new Audio("/sounds/mouse-click.mp3");
             mouseClickSound.play().catch(() => {});
             toggleSound();
           },
-          isSoundEnabled ? "Mute sounds" : "Enable sounds",
-          isSoundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />,
-        )}
+          ariaLabel: isSoundEnabled ? "Mute sounds" : "Enable sounds",
+          ariaPressed: isSoundEnabled,
+          children: isSoundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />,
+        })}
         <button
           onClick={logout}
-          title="Logout"
+          aria-label="Logout"
           className="size-8 rounded-lg flex items-center justify-center transition-all duration-150"
           style={{ color: "var(--fg-subtle)", background: "transparent" }}
           onMouseEnter={(e) => {

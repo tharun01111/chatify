@@ -4,6 +4,7 @@ import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketIds, io } from "../lib/socket.js";
 import mongoose from "mongoose";
 import {
+  escapeRegex,
   parsePositiveInt,
   sanitizeName,
   validateFileType,
@@ -20,7 +21,7 @@ export const getAllContacts = async (req, res) => {
     const filteredUsers = await User.find({
       _id: { $ne: loggedInUserId },
       ...(search && {
-        fullName: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" },
+        fullName: { $regex: escapeRegex(search), $options: "i" },
       }),
     })
       .sort({ fullName: 1 })
@@ -191,7 +192,7 @@ export const getChatPartners = async (req, res) => {
     const chatPartners = await User.find({
       _id: { $in: partnerIds },
       ...(search && {
-        fullName: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" },
+        fullName: { $regex: escapeRegex(search), $options: "i" },
       }),
     })
       .sort({ fullName: 1 })

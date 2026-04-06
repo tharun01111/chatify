@@ -1,4 +1,5 @@
 const CALL_RING_TIMEOUT_MS = 30_000;
+const ALLOWED_CALL_TYPES = new Set(["audio", "video"]);
 
 export const setupCallHandlers = (
   io,
@@ -15,6 +16,16 @@ export const setupCallHandlers = (
 
   socket.on("call_request", ({ targetUserId, callType, callId }) => {
     if (!targetUserId || !callId || callerId === targetUserId) return;
+
+    if (!ALLOWED_CALL_TYPES.has(callType)) {
+      console.warn("Rejected call_request with invalid callType", {
+        callerId,
+        targetUserId,
+        callType,
+      });
+      socket.emit("call_rejected", { calleeId: targetUserId, reason: "invalid_call_type" });
+      return;
+    }
 
     if (activeCalls[callerId] || pendingCalls[callerId]) {
       socket.emit("call_rejected", { calleeId: targetUserId, reason: "busy" });
@@ -38,6 +49,15 @@ export const setupCallHandlers = (
 
     const timeout = setTimeout(() => {
       clearPendingCall(callerId);
+      const calleeSocketIds = getSocketIds(targetUserId);
+
+      if (calleeSocketIds.length > 0) {
+        io.to(calleeSocketIds).emit("call_rejected", {
+          calleeId: callerId,
+          reason: "missed",
+        });
+      }
+
       socket.emit("call_rejected", {
         calleeId: targetUserId,
         reason: "missed",

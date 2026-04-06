@@ -2,7 +2,7 @@ import { MessageCircle } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
 
 function NoChatHistoryPlaceholder({ name }) {
-  const { sendMessage } = useChatStore();
+  const { sendMessage, selectedUser } = useChatStore();
   const starters = ["Hey there!", "How are you doing?", "Let's catch up!"];
 
   return (
@@ -23,17 +23,13 @@ function NoChatHistoryPlaceholder({ name }) {
         {starters.map((message) => (
           <button
             key={message}
-            onClick={() => sendMessage({ text: message, image: null })}
-            className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+            onClick={() => {
+              if (!selectedUser) return;
+              void sendMessage({ text: message, image: null });
+            }}
+            disabled={!selectedUser}
+            className="starter-chip px-3 py-1.5 rounded-xl text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: "var(--bg-secondary)", color: "var(--fg-muted)", border: "1px solid var(--border-md)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--accent-border)";
-              e.currentTarget.style.color = "var(--accent)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--border-md)";
-              e.currentTarget.style.color = "var(--fg-muted)";
-            }}
           >
             {message}
           </button>

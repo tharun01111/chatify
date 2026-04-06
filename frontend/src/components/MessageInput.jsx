@@ -30,7 +30,7 @@ function MessageInput() {
     reader.readAsDataURL(file);
   };
 
-  const canSend = text.trim() || imagePreview;
+  const canSend = Boolean(text.trim() || imagePreview);
 
   return (
     <div

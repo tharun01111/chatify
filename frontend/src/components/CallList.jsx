@@ -66,13 +66,23 @@ function CallList({ search = "" }) {
           normalizedText.includes("missed") || normalizedText.includes("declined");
         const isVideo = normalizedText.includes("video");
 
+        const openConversation = () => {
+          setSelectedUser(partner);
+          setActiveTab("chats");
+        };
+
         return (
           <div
             key={log._id}
             className="group flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700/50 bg-slate-800/40 p-3 transition-all hover:bg-slate-800/60"
-            onClick={() => {
-              setSelectedUser(partner);
-              setActiveTab("chats");
+            role="button"
+            tabIndex={0}
+            onClick={openConversation}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openConversation();
+              }
             }}
           >
             <div className="relative">

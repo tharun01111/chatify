@@ -123,7 +123,10 @@ function Sidebar({ onOpenProfile }) {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setSearch("");
+                  setActiveTab(tab.id);
+                }}
                 className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all duration-200"
                 style={{
                   fontFamily: "'Syne',sans-serif",

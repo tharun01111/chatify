@@ -27,9 +27,15 @@ export const validateImageSize = (base64Image) => {
 
 export const normalizeEmail = (email = "") => email.trim().toLowerCase();
 
-export const sanitizeName = (name = "") => name.trim().replace(/\s+/g, " ");
+export const normalizeWhitespace = (value = "") =>
+  String(value).trim().replace(/\s+/g, " ");
 
-export const sanitizeBio = (bio = "") => bio.trim().replace(/\s+/g, " ");
+export const sanitizeName = (name = "") => normalizeWhitespace(name);
+
+export const sanitizeBio = (bio = "") => normalizeWhitespace(bio);
+
+export const escapeRegex = (value = "") =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export const parsePositiveInt = (value, fallback, max = Infinity) => {
   const parsed = Number.parseInt(value, 10);

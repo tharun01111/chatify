@@ -3,53 +3,46 @@ import { Phone, PhoneOff, Video, VideoOff } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import ChatHeader from "./ChatHeader";
-import NoChatHistoryPlaceholder from "./NoChatHistoryPlaceholder";
 import MessageInput from "./MessageInput";
 import MessagesLoadingSkeleton from "./MessageLoadingSkeleton";
+import NoChatHistoryPlaceholder from "./NoChatHistoryPlaceholder";
 
-function getCallMeta(text) {
-  if (!text) return null;
-
-  const normalizedText = text.toLowerCase();
-
-  if (normalizedText.includes("video call ended unexpectedly")) {
-    return { type: "video", state: "interrupted", icon: VideoOff };
-  }
-
-  if (normalizedText.includes("video call ended")) {
-    return { type: "video", state: "ended", icon: Video };
-  }
-
-  if (normalizedText.includes("voice call ended")) {
-    return { type: "voice", state: "ended", icon: Phone };
-  }
-
-  if (normalizedText.includes("declined video call")) {
-    return { type: "video", state: "declined", icon: VideoOff };
-  }
-
-  if (normalizedText.includes("declined voice call")) {
-    return { type: "voice", state: "declined", icon: PhoneOff };
-  }
-
-  if (normalizedText.includes("missed video call")) {
-    return { type: "video", state: "missed", icon: VideoOff };
-  }
-
-  if (normalizedText.includes("missed voice call")) {
-    return { type: "voice", state: "missed", icon: PhoneOff };
-  }
-
-  if (normalizedText.includes("offline for video call")) {
-    return { type: "video", state: "offline", icon: VideoOff };
-  }
-
-  return null;
+function extractDuration(message) {
+  const match = message?.text?.match(/\d+:\d+/);
+  return match ? match[0] : null;
 }
 
-function extractDuration(text) {
-  const match = text?.match(/\d+:\d+/);
-  return match ? match[0] : null;
+function parseCallState(message) {
+  const normalizedText = (message?.text || "").toLowerCase();
+
+  if (normalizedText.includes("ended unexpectedly")) return "interrupted";
+  if (normalizedText.includes("ended")) return "ended";
+  if (normalizedText.includes("missed")) return "missed";
+  if (normalizedText.includes("offline")) return "offline";
+  if (normalizedText.includes("declined")) return "declined";
+
+  return "declined";
+}
+
+function getCallIcon(type, state) {
+  if (type === "audio") {
+    return state === "ended" ? Phone : PhoneOff;
+  }
+
+  return state === "ended" ? Video : VideoOff;
+}
+
+function getCallMeta(message) {
+  if (message?.messageType !== "call") return null;
+
+  const type = message.callType === "audio" ? "voice" : "video";
+  const state = parseCallState(message);
+
+  return {
+    type,
+    state,
+    icon: getCallIcon(message.callType, state),
+  };
 }
 
 function getCallStatusLabel(meta, duration) {
@@ -63,9 +56,9 @@ function getCallStatusLabel(meta, duration) {
   return "Declined";
 }
 
-function CallBubble({ msg, isMine }) {
-  const meta = getCallMeta(msg.text);
-  const duration = extractDuration(msg.text);
+function CallBubble({ message, isMine }) {
+  const meta = getCallMeta(message);
+  const duration = extractDuration(message);
   const Icon = meta.icon;
   const ended = meta.state === "ended";
 
@@ -76,9 +69,7 @@ function CallBubble({ msg, isMine }) {
           className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl"
           style={{
             background: ended ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
-            border: `1px solid ${
-              ended ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"
-            }`,
+            border: `1px solid ${ended ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}`,
             minWidth: "180px",
           }}
         >
@@ -91,22 +82,16 @@ function CallBubble({ msg, isMine }) {
             <Icon size={14} style={{ color: ended ? "var(--online)" : "var(--danger)" }} />
           </div>
           <div>
-            <p
-              className="text-xs font-semibold"
-              style={{ color: "var(--fg)", fontFamily: "'Syne',sans-serif" }}
-            >
+            <p className="text-xs font-semibold" style={{ color: "var(--fg)", fontFamily: "'Syne',sans-serif" }}>
               {meta.type === "video" ? "Video Call" : "Voice Call"}
             </p>
-            <p
-              className="text-[11px]"
-              style={{ color: ended ? "var(--online)" : "var(--danger)" }}
-            >
+            <p className="text-[11px]" style={{ color: ended ? "var(--online)" : "var(--danger)" }}>
               {getCallStatusLabel(meta, duration)}
             </p>
           </div>
         </div>
         <p className="text-[10px] mt-1 px-1" style={{ color: "var(--fg-subtle)" }}>
-          {new Date(msg.createdAt).toLocaleTimeString(undefined, {
+          {new Date(message.createdAt).toLocaleTimeString(undefined, {
             hour: "2-digit",
             minute: "2-digit",
           })}
@@ -127,6 +112,11 @@ function ChatContainer() {
   } = useChatStore();
   const { authUser } = useAuthStore();
   const bottomRef = useRef(null);
+  const messageListRef = useRef(null);
+
+  const scrollToBottom = (behavior = "smooth") => {
+    bottomRef.current?.scrollIntoView({ behavior });
+  };
 
   useEffect(() => {
     getMessagesByUserId(selectedUser._id);
@@ -135,14 +125,29 @@ function ChatContainer() {
   }, [selectedUser, getMessagesByUserId, subscribeToMessages, unsubscribeFromMessages]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const container = messageListRef.current;
+    if (!container || messages.length === 0) return;
+
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+    const latestMessage = messages[messages.length - 1];
+    const latestSenderId =
+      typeof latestMessage?.senderId === "object"
+        ? latestMessage.senderId?._id
+        : latestMessage?.senderId;
+    const isOutgoing = latestSenderId === authUser?._id;
+
+    if (isNearBottom || isOutgoing) {
+      scrollToBottom(isOutgoing ? "smooth" : "auto");
+    }
+  }, [authUser?._id, messages]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <ChatHeader />
 
       <div
+        ref={messageListRef}
         className="flex-1 overflow-y-auto"
         style={{ background: "var(--bg)", padding: "20px 24px" }}
       >
@@ -152,23 +157,27 @@ function ChatContainer() {
           <NoChatHistoryPlaceholder name={selectedUser.fullName} />
         ) : (
           <div className="flex flex-col gap-3" style={{ maxWidth: "820px", margin: "0 auto" }}>
-            {messages.map((msg, i) => {
-              const isMine = msg.senderId === authUser._id;
-              const callMeta = getCallMeta(msg.text);
+            {messages.map((message, index) => {
+              const senderId =
+                typeof message.senderId === "object"
+                  ? message.senderId?._id
+                  : message.senderId;
+              const isMine = senderId === authUser._id;
+              const callMeta = getCallMeta(message);
 
               if (callMeta) {
                 return (
-                  <div key={msg._id} className={`flex ${isMine ? "justify-end" : "justify-start"} fade-up`}>
-                    <CallBubble msg={msg} isMine={isMine} />
+                  <div key={message._id} className={`flex ${isMine ? "justify-end" : "justify-start"} fade-up`}>
+                    <CallBubble message={message} isMine={isMine} />
                   </div>
                 );
               }
 
               return (
                 <div
-                  key={msg._id}
+                  key={message._id}
                   className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"} fade-up`}
-                  style={{ animationDelay: `${Math.min(i * 0.012, 0.2)}s` }}
+                  style={{ animationDelay: `${Math.min(index * 0.012, 0.2)}s` }}
                 >
                   <div className="size-7 rounded-full overflow-hidden flex-shrink-0 mb-1">
                     <img
@@ -182,13 +191,10 @@ function ChatContainer() {
                     />
                   </div>
 
-                  <div
-                    className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}
-                    style={{ maxWidth: "65%" }}
-                  >
-                    {msg.image && (
+                  <div className={`flex flex-col ${isMine ? "items-end" : "items-start"}`} style={{ maxWidth: "65%" }}>
+                    {message.image && (
                       <img
-                        src={msg.image}
+                        src={message.image}
                         alt="Shared"
                         className="mb-1 object-cover"
                         style={{
@@ -199,7 +205,7 @@ function ChatContainer() {
                         }}
                       />
                     )}
-                    {msg.text && (
+                    {message.text && (
                       <div
                         style={{
                           padding: "10px 14px",
@@ -213,7 +219,7 @@ function ChatContainer() {
                           boxShadow: isMine ? "0 2px 10px rgba(129,140,248,0.2)" : "none",
                         }}
                       >
-                        {msg.text}
+                        {message.text}
                       </div>
                     )}
                     <p
@@ -225,7 +231,7 @@ function ChatContainer() {
                         color: "var(--fg-subtle)",
                       }}
                     >
-                      {new Date(msg.createdAt).toLocaleTimeString(undefined, {
+                      {new Date(message.createdAt).toLocaleTimeString(undefined, {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}

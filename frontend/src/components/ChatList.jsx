@@ -15,11 +15,8 @@ function ChatList({ search = "" }) {
 
   useEffect(() => {
     setChatSearch(search);
-  }, [search, setChatSearch]);
-
-  useEffect(() => {
-    getMyChatPartners();
-  }, [getMyChatPartners, search]);
+    getMyChatPartners(search);
+  }, [getMyChatPartners, search, setChatSearch]);
 
   if (isUsersLoading) return <UsersLoadingSkeleton />;
   if (chats.length === 0) return <NoChatsFound />;

@@ -24,6 +24,12 @@
   --sidebar-w:     300px;
 }
 
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -34,7 +40,23 @@ html, body, #root {
   background: var(--bg);
   color: var(--fg);
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
+}
+
+.chat-shell { overflow: hidden; }
+
+.contact-button {
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.contact-button:hover {
+  background: var(--bg-hover);
+  border-color: var(--border);
+}
+
+.starter-chip:hover:not(:disabled) {
+  border-color: var(--accent-border) !important;
+  color: var(--accent) !important;
 }
 
 /* ── Scrollbar ── */
