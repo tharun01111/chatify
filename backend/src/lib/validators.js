@@ -25,3 +25,17 @@ export const validateImageSize = (base64Image) => {
   return sizeInMb <= 5;
 };
 
+export const normalizeEmail = (email = "") => email.trim().toLowerCase();
+
+export const sanitizeName = (name = "") => name.trim().replace(/\s+/g, " ");
+
+export const sanitizeBio = (bio = "") => bio.trim().replace(/\s+/g, " ");
+
+export const parsePositiveInt = (value, fallback, max = Infinity) => {
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+
+  return Math.min(parsed, max);
+};
+

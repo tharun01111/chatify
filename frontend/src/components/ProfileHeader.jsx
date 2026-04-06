@@ -1,16 +1,13 @@
-import { useState, useRef } from "react";
-import { LogOutIcon, VolumeOffIcon, Volume2Icon } from "lucide-react";
+import { useRef, useState } from "react";
+import { Camera, LogOut, Volume2, VolumeX } from "lucide-react";
+import toast from "react-hot-toast";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
-import toast from "react-hot-toast";
-
-const mouseClickSound = new Audio("/sounds/mouse-click.mp3");
 
 function ProfileHeader() {
   const { logout, authUser, updateProfile, isUpdatingImage } = useAuthStore();
   const { isSoundEnabled, toggleSound } = useChatStore();
-
-  const [selectedImg, setSelectedImg] = useState(null); 
+  const [selectedImg, setSelectedImg] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleImageUpload = async (e) => {
@@ -24,103 +21,122 @@ function ProfileHeader() {
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
-
     reader.onloadend = async () => {
       const base64Image = reader.result;
-
-      // Show instant preview
       setSelectedImg(base64Image);
-
       try {
         await updateProfile({ profilePic: base64Image });
-        
-        // 🔥 THIS IS THE FIX
-        // Clear local preview so img falls back to the new Cloudinary URL from authUser
         setSelectedImg(null);
-
-      } catch (err) {
-        console.log(err);
-        // Optional: clear preview on error
+      } catch {
         setSelectedImg(null);
       }
     };
   };
 
+  const iconBtn = (onClick, title, children) => (
+    <button
+      onClick={onClick}
+      title={title}
+      className="size-8 rounded-lg flex items-center justify-center transition-all duration-150"
+      style={{ color: "var(--fg-subtle)", background: "transparent" }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--bg-hover)";
+        e.currentTarget.style.color = "var(--fg)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+        e.currentTarget.style.color = "var(--fg-subtle)";
+      }}
+    >
+      {children}
+    </button>
+  );
+
   return (
-    <div className="p-6 border-b border-slate-700/50">
-      <div className="flex items-center justify-between">
-        {/* Left side: Avatar + Name */}
-        <div className="flex items-center gap-3">
-          <div className="avatar online">
-            <button
-              className="size-14 rounded-full overflow-hidden relative group"
-              onClick={() => fileInputRef.current.click()}
-              disabled={isUpdatingImage}
-            >
-              <img
-                src={selectedImg || authUser?.profilePic || "/avatar.png"}
-                alt="User Image"
-                className="size-full object-cover"
-              />
-
-              {/* Loading overlay while uploading */}
-              {isUpdatingImage && (
-                <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                  <span className="text-white text-xs loading loading-spinner loading-sm"></span>
-                </div>
-              )}
-
-              {!isUpdatingImage && (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <span className="text-white text-xs">Change</span>
-                </div>
-              )}
-            </button>
-
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-              className="hidden"
-              disabled={isUpdatingImage}
-            />
-          </div>
-
-          <div>
-            <h3 className="text-slate-200 font-medium text-base max-w-[180px] truncate">
-              {authUser?.fullName}
-            </h3>
-            <p className="text-slate-400 text-xs">Online</p>
-          </div>
-        </div>
-
-        {/* Right side: buttons (unchanged) */}
-        <div className="flex items-center gap-4">
+    <div
+      className="px-4 py-3.5 flex items-center justify-between flex-shrink-0"
+      style={{ borderBottom: "1px solid var(--border)" }}
+    >
+      <div className="flex items-center gap-3">
+        <div className="relative">
           <button
-            className="text-slate-400 hover:text-slate-200 transition-colors"
-            onClick={() => {
-              mouseClickSound.currentTime = 0;
-              mouseClickSound
-                .play()
-                .catch((error) => console.log("Audio play failed:", error));
-              toggleSound();
+            className="size-9 rounded-full overflow-hidden relative group focus:outline-none"
+            onClick={() => fileInputRef.current.click()}
+            disabled={isUpdatingImage}
+            style={{
+              border: "2px solid var(--accent-border)",
+              boxShadow: "0 0 10px var(--accent-glow)",
             }}
           >
-            {isSoundEnabled ? (
-              <Volume2Icon className="size-5" />
-            ) : (
-              <VolumeOffIcon className="size-5" />
+            <img
+              src={selectedImg || authUser?.profilePic || "/avatar.png"}
+              alt="me"
+              className="size-full object-cover"
+            />
+            {isUpdatingImage && (
+              <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                <span className="loading loading-spinner loading-xs text-white" />
+              </div>
+            )}
+            {!isUpdatingImage && (
+              <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Camera size={11} className="text-white" />
+              </div>
             )}
           </button>
-
-          <button
-            className="text-slate-400 hover:text-slate-200 transition-colors"
-            onClick={logout}
-          >
-            <LogOutIcon className="size-5 hover:scale-110 transition-transform" />
-          </button>
+          <span
+            className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full online-pulse"
+            style={{ background: "var(--online)", border: "2px solid var(--bg-card)" }}
+          />
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            className="hidden"
+            disabled={isUpdatingImage}
+          />
         </div>
+
+        <div>
+          <p
+            className="text-sm font-semibold leading-tight truncate max-w-[120px]"
+            style={{ color: "var(--fg)", fontFamily: "'Syne',sans-serif" }}
+          >
+            {authUser?.fullName}
+          </p>
+          <p className="text-[11px] font-medium" style={{ color: "var(--online)" }}>
+            Active
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-0.5">
+        {iconBtn(
+          () => {
+            const mouseClickSound = new Audio("/sounds/mouse-click.mp3");
+            mouseClickSound.play().catch(() => {});
+            toggleSound();
+          },
+          isSoundEnabled ? "Mute sounds" : "Enable sounds",
+          isSoundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />,
+        )}
+        <button
+          onClick={logout}
+          title="Logout"
+          className="size-8 rounded-lg flex items-center justify-center transition-all duration-150"
+          style={{ color: "var(--fg-subtle)", background: "transparent" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(248,113,113,0.12)";
+            e.currentTarget.style.color = "var(--danger)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "var(--fg-subtle)";
+          }}
+        >
+          <LogOut size={14} />
+        </button>
       </div>
     </div>
   );

@@ -217,7 +217,23 @@ export const useCallStore = create((set, get) => ({
     });
 
     socket.on("call_rejected", (data) => {
-      toast(data.reason === "busy" ? "User is busy" : "Call declined");
+      const rejectionReason = data.reason || "declined";
+      toast(
+        rejectionReason === "busy"
+          ? "User is busy"
+          : rejectionReason === "missed"
+            ? "Call was missed"
+            : rejectionReason === "unavailable"
+              ? "User became unavailable"
+              : "Call declined",
+      );
+
+      if (rejectionReason === "missed") {
+        void get().finalizeCallLog({ reason: "missed" });
+      } else if (rejectionReason === "unavailable") {
+        void get().finalizeCallLog({ reason: "unavailable" });
+      }
+
       useChatStore
         .getState()
         .removeTemporaryCallLog(get().activePeerId || data.calleeId);

@@ -1,6 +1,24 @@
 function BorderAnimatedContainer({ children }) {
   return (
-    <div className="w-full h-full [background:linear-gradient(45deg,#172033,theme(colors.slate.800)_50%,#172033)_padding-box,conic-gradient(from_var(--border-angle),theme(colors.slate.600/.48)_80%,_theme(colors.cyan.500)_86%,_theme(colors.cyan.300)_90%,_theme(colors.cyan.500)_94%,_theme(colors.slate.600/.48))_border-box] rounded-2xl border border-transparent animate-border  flex overflow-hidden">
+    <div
+      className="w-full h-full flex overflow-hidden rounded-2xl animate-border"
+      style={{
+        background: `
+          linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+          conic-gradient(
+            from var(--border-angle),
+            rgba(255,255,255,0.04) 0%,
+            rgba(255,255,255,0.04) 65%,
+            #818cf8 78%,
+            #c4b5fd 86%,
+            #818cf8 93%,
+            rgba(255,255,255,0.04) 100%
+          ) border-box
+        `,
+        border: '1.5px solid transparent',
+        boxShadow: '0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+      }}
+    >
       {children}
     </div>
   );

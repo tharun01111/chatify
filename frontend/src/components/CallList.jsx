@@ -6,11 +6,11 @@ import {
   PhoneOutgoing,
   Video,
 } from "lucide-react";
-import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
+import { useChatStore } from "../store/useChatStore";
 import UsersLoadingSkeleton from "./UsersLoadingSkeleton";
 
-function CallList() {
+function CallList({ search = "" }) {
   const {
     getCallHistory,
     callLogs,
@@ -35,7 +35,18 @@ function CallList() {
 
   if (isCallLogsLoading) return <UsersLoadingSkeleton />;
 
-  if (callLogs.length === 0) {
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredLogs = callLogs.filter((log) => {
+    const partner = log.senderId._id === authUser._id ? log.receiverId : log.senderId;
+
+    return (
+      !normalizedSearch ||
+      partner.fullName?.toLowerCase().includes(normalizedSearch) ||
+      (log.text || "").toLowerCase().includes(normalizedSearch)
+    );
+  });
+
+  if (filteredLogs.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8 text-center text-slate-500">
         <Phone size={48} className="mb-4 opacity-20" />
@@ -46,14 +57,13 @@ function CallList() {
 
   return (
     <div className="space-y-2">
-      {callLogs.map((log) => {
+      {filteredLogs.map((log) => {
         const isOutgoing = log.senderId._id === authUser._id;
         const partner = isOutgoing ? log.receiverId : log.senderId;
-        const text = (log.text || "").replace("ðŸ“ž ", "").replace("📞 ", "");
+        const text = (log.text || "").trim();
         const normalizedText = text.toLowerCase();
         const isMissed =
-          normalizedText.includes("missed") ||
-          normalizedText.includes("declined");
+          normalizedText.includes("missed") || normalizedText.includes("declined");
         const isVideo = normalizedText.includes("video");
 
         return (

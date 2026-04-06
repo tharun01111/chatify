@@ -1,17 +1,32 @@
 import Message from "../models/Message.js";
 import User from "../models/User.js";
 import cloudinary from "../lib/cloudinary.js";
-import { getRecieverSocketId, io } from "../lib/socket.js";
+import { getReceiverSocketIds, io } from "../lib/socket.js";
 import mongoose from "mongoose";
-import { validateFileType, validateImageSize } from "../lib/validators.js";
+import {
+  parsePositiveInt,
+  sanitizeName,
+  validateFileType,
+  validateImageSize,
+} from "../lib/validators.js";
 import xss from "xss";
 
 export const getAllContacts = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
+    const search = sanitizeName(req.query.search || "");
+    const limit = parsePositiveInt(req.query.limit, 25, 100);
+
     const filteredUsers = await User.find({
       _id: { $ne: loggedInUserId },
-    }).select("-password");
+      ...(search && {
+        fullName: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" },
+      }),
+    })
+      .sort({ fullName: 1 })
+      .limit(limit)
+      .select("-password");
+
     res.status(200).json(filteredUsers);
   } catch (err) {
     console.log("Error in getAllContacts: ", err);
@@ -24,6 +39,14 @@ export const getMessageByUserId = async (req, res) => {
     const myId = req.user._id;
     const { cursor } = req.query;
     const { id: userToChatId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userToChatId)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    if (cursor && !mongoose.Types.ObjectId.isValid(cursor)) {
+      return res.status(400).json({ message: "Invalid cursor" });
+    }
 
     //To get both messsages sent by me and the other user i should use
     //$or operator
@@ -58,6 +81,10 @@ export const sendMessage = async (req, res) => {
     const { text, image, messageType, callDuration, callType } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ message: "Invalid receiver id." });
+    }
 
     const sanitizedText = text ? xss(text) : text;
 
@@ -109,9 +136,9 @@ export const sendMessage = async (req, res) => {
     await newMessage.save();
 
     //we will use this function to check if the user is online or not
-    const recieverSocketId = getRecieverSocketId(receiverId);
-    if (recieverSocketId) {
-      io.to(recieverSocketId).emit("newMessage", newMessage);
+    const receiverSocketIds = getReceiverSocketIds(receiverId);
+    if (receiverSocketIds.length > 0) {
+      io.to(receiverSocketIds).emit("newMessage", newMessage);
     }
 
     res.status(201).json(newMessage);
@@ -144,6 +171,8 @@ export const getCallHistory = async (req, res) => {
 export const getChatPartners = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
+    const search = sanitizeName(req.query.search || "");
+    const limit = parsePositiveInt(req.query.limit, 25, 100);
 
     const sentTo = await Message.distinct("receiverId", {
       senderId: loggedInUserId,
@@ -161,7 +190,13 @@ export const getChatPartners = async (req, res) => {
 
     const chatPartners = await User.find({
       _id: { $in: partnerIds },
-    }).select("-password");
+      ...(search && {
+        fullName: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" },
+      }),
+    })
+      .sort({ fullName: 1 })
+      .limit(limit)
+      .select("-password");
 
     res.status(200).json(chatPartners);
   } catch (err) {

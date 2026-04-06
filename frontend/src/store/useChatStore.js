@@ -31,6 +31,8 @@ export const useChatStore = create((set, get) => ({
   cursor: null,
   hasMore: false,
   isLoadingMore: false,
+  contactSearch: "",
+  chatSearch: "",
 
   toggleSound: () => {
     localStorage.setItem("isSoundEnabled", !get().isSoundEnabled);
@@ -39,6 +41,8 @@ export const useChatStore = create((set, get) => ({
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSelectedUser: (selectedUser) => set({ selectedUser }),
+  setContactSearch: (contactSearch) => set({ contactSearch }),
+  setChatSearch: (chatSearch) => set({ chatSearch }),
 
   findUserById: (userId) => {
     const normalizedUserId = getUserId(userId);
@@ -211,7 +215,11 @@ export const useChatStore = create((set, get) => ({
   getAllContacts: async () => {
     set({ isUsersLoading: true });
     try {
-      const res = await axiosInstance.get("/message/contacts");
+      const search = get().contactSearch.trim();
+      const params = new URLSearchParams({ limit: "50" });
+      if (search) params.set("search", search);
+
+      const res = await axiosInstance.get(`/message/contacts?${params.toString()}`);
       set({ allContacts: res.data });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load contacts");
@@ -223,7 +231,11 @@ export const useChatStore = create((set, get) => ({
   getMyChatPartners: async () => {
     set({ isUsersLoading: true });
     try {
-      const res = await axiosInstance.get("/message/chats");
+      const search = get().chatSearch.trim();
+      const params = new URLSearchParams({ limit: "50" });
+      if (search) params.set("search", search);
+
+      const res = await axiosInstance.get(`/message/chats?${params.toString()}`);
       set({ chats: res.data });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load chats");

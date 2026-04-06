@@ -1,8 +1,14 @@
-import streamClient from "../lib/stream.js";
+import { getStreamClient } from "../lib/stream.js";
 import { ENV } from "../lib/env.js";
 
 export const getStreamToken = async (req, res) => {
   try {
+    const streamClient = getStreamClient();
+
+    if (!streamClient) {
+      return res.status(503).json({ message: "Video calling is not configured" });
+    }
+
     const userId = req.user._id.toString();
     const user = req.user;
 

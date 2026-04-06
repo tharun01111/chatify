@@ -1,36 +1,67 @@
-export const setupCallHandlers = (io, socket, userSocketMap, activeCalls) => {
+const CALL_RING_TIMEOUT_MS = 30_000;
+
+export const setupCallHandlers = (
+  io,
+  socket,
+  userSocketMap,
+  activeCalls,
+  pendingCalls,
+  pendingCallTimers,
+  clearPendingCall,
+) => {
   const callerId = socket.userId;
 
-  // Caller initiates call
+  const getSocketIds = (userId) => Array.from(userSocketMap[userId] || []);
+
   socket.on("call_request", ({ targetUserId, callType, callId }) => {
-    if (callerId === targetUserId) return;
+    if (!targetUserId || !callId || callerId === targetUserId) return;
 
-    const targetSocketId = userSocketMap[targetUserId];
-
-    if (targetSocketId) {
-      activeCalls[callerId] = targetUserId;
-      activeCalls[targetUserId] = callerId;
-
-      io.to(targetSocketId).emit("call_incoming", {
-        callerId,
-        callerName: socket.user?.fullName || "User",
-        profilePic: socket.user?.profilePic || "",
-        callType,
-        callId, // receiver uses this to join same Stream room
-      });
-    } else {
-      socket.emit("call_failed_offline", { targetUserId });
+    if (activeCalls[callerId] || pendingCalls[callerId]) {
+      socket.emit("call_rejected", { calleeId: targetUserId, reason: "busy" });
+      return;
     }
+
+    if (activeCalls[targetUserId] || pendingCalls[targetUserId]) {
+      socket.emit("call_rejected", { calleeId: targetUserId, reason: "busy" });
+      return;
+    }
+
+    const targetSocketIds = getSocketIds(targetUserId);
+
+    if (targetSocketIds.length === 0) {
+      socket.emit("call_failed_offline", { targetUserId });
+      return;
+    }
+
+    pendingCalls[callerId] = targetUserId;
+    pendingCalls[targetUserId] = callerId;
+
+    const timeout = setTimeout(() => {
+      clearPendingCall(callerId);
+      socket.emit("call_rejected", {
+        calleeId: targetUserId,
+        reason: "missed",
+      });
+    }, CALL_RING_TIMEOUT_MS);
+
+    pendingCallTimers[callerId] = timeout;
+    pendingCallTimers[targetUserId] = timeout;
+
+    io.to(targetSocketIds).emit("call_incoming", {
+      callerId,
+      callerName: socket.user?.fullName || "User",
+      profilePic: socket.user?.profilePic || "",
+      callType,
+      callId,
+    });
   });
 
-  // Receiver rejects call
   socket.on("call_reject", ({ targetUserId, reason }) => {
-    delete activeCalls[callerId];
-    delete activeCalls[targetUserId];
+    clearPendingCall(callerId);
 
-    const targetSocketId = userSocketMap[targetUserId];
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("call_rejected", {
+    const targetSocketIds = getSocketIds(targetUserId);
+    if (targetSocketIds.length > 0) {
+      io.to(targetSocketIds).emit("call_rejected", {
         calleeId: callerId,
         reason: reason || "declined",
       });
@@ -40,25 +71,28 @@ export const setupCallHandlers = (io, socket, userSocketMap, activeCalls) => {
   socket.on("call_joined", ({ targetUserId }) => {
     if (!targetUserId || callerId === targetUserId) return;
 
+    clearPendingCall(callerId);
     activeCalls[callerId] = targetUserId;
     activeCalls[targetUserId] = callerId;
   });
 
   socket.on("call_end", ({ targetUserId }) => {
+    clearPendingCall(callerId);
     delete activeCalls[callerId];
     delete activeCalls[targetUserId];
 
-    const targetSocketId = userSocketMap[targetUserId];
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("call_ended", { userId: callerId });
+    const targetSocketIds = getSocketIds(targetUserId);
+    if (targetSocketIds.length > 0) {
+      io.to(targetSocketIds).emit("call_ended", { userId: callerId });
     }
   });
 
-  // Receiver is already in a call
   socket.on("call_busy", ({ targetUserId }) => {
-    const targetSocketId = userSocketMap[targetUserId];
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("call_rejected", {
+    clearPendingCall(callerId);
+
+    const targetSocketIds = getSocketIds(targetUserId);
+    if (targetSocketIds.length > 0) {
+      io.to(targetSocketIds).emit("call_rejected", {
         calleeId: callerId,
         reason: "busy",
       });

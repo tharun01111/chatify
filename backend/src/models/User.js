@@ -6,10 +6,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      lowercase: true,
     },
     fullName: {
       type: String,
       required: true,
+      trim: true,
     },
     password: {
       type: String,
@@ -19,6 +22,12 @@ const userSchema = new mongoose.Schema(
     profilePic: {
       type: String,
       default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 160,
     },
   },
   { timestamps: true }, //createdAt & updatedAt

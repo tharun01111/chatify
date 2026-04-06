@@ -22,7 +22,7 @@ export default function IncomingCallModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
       <div className="bg-slate-800 p-8 rounded-2xl shadow-2xl flex flex-col items-center w-80">
         <div className="relative mb-6">
           <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping"></div>
@@ -45,12 +45,14 @@ export default function IncomingCallModal() {
           <button
             onClick={() => rejectCall("declined")}
             className="btn btn-error btn-circle btn-lg text-white"
+            aria-label="Decline call"
           >
             <PhoneOff size={28} />
           </button>
           <button
             onClick={handleAccept}
             className="btn btn-success btn-circle btn-lg text-white"
+            aria-label="Accept call"
           >
             <Video size={28} />
           </button>

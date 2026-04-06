@@ -1,25 +1,22 @@
-import { MessageCircleIcon } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
 
 function NoChatsFound() {
   const { setActiveTab } = useChatStore();
-
   return (
-    <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
-      <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center">
-        <MessageCircleIcon className="w-8 h-8 text-cyan-400" />
+    <div className="flex flex-col items-center justify-center py-12 text-center px-4 space-y-4">
+      <div className="size-12 rounded-xl flex items-center justify-center"
+        style={{ background: 'rgba(129,140,248,0.08)', border: '1px solid var(--accent-border)' }}>
+        <MessageCircle size={20} style={{ color: 'var(--accent)' }} />
       </div>
       <div>
-        <h4 className="text-slate-200 font-medium mb-1">No conversations yet</h4>
-        <p className="text-slate-400 text-sm px-6">
-          Start a new chat by selecting a contact from the contacts tab
-        </p>
+        <h4 className="text-sm font-bold mb-1" style={{ color: 'var(--fg)', fontFamily: "'Syne',sans-serif" }}>No chats yet</h4>
+        <p className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Start by messaging someone from contacts</p>
       </div>
-      <button
-        onClick={() => setActiveTab("contacts")}
-        className="px-4 py-2 text-sm text-cyan-400 bg-cyan-500/10 rounded-lg hover:bg-cyan-500/20 transition-colors"
-      >
-        Find contacts
+      <button onClick={() => setActiveTab("contacts")}
+        className="px-4 py-2 rounded-xl text-xs font-bold"
+        style={{ background: 'var(--accent)', color: '#fff', fontFamily: "'Syne',sans-serif", boxShadow: '0 2px 10px rgba(129,140,248,0.3)' }}>
+        Browse Contacts
       </button>
     </div>
   );
