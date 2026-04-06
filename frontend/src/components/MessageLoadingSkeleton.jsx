@@ -1,12 +1,10 @@
 function MessageLoadingSkeleton() {
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {[...Array(6)].map((_, index) => (
-        <div
-          key={index}
-          className={`chat ${index % 2 === 0 ? "chat-start" : "chat-end"} animate-pulse`}
-        >
-          <div className={`chat-bubble bg-slate-800 text-white w-32`}></div>
+    <div style={{ maxWidth: '820px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }} className="animate-pulse">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexDirection: i % 2 === 0 ? 'row' : 'row-reverse' }}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bg-hover)', flexShrink: 0 }} />
+          <div style={{ height: '40px', borderRadius: '16px', background: 'var(--bg-secondary)', width: `${[38,55,32,58,42][i]}%` }} />
         </div>
       ))}
     </div>

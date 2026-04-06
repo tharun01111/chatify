@@ -1,40 +1,52 @@
 import { useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import UsersLoadingSkeleton from "./UsersLoadingSkeleton";
-import { useAuthStore } from "../store/useAuthStore";
 
-function ContactList() {
-  const { getAllContacts, allContacts, setSelectedUser, isUsersLoading } =
-    useChatStore();
-  const { onlineUsers } = useAuthStore();
+function ContactList({ search = "" }) {
+  const {
+    getAllContacts,
+    allContacts,
+    setSelectedUser,
+    isUsersLoading,
+    setContactSearch,
+  } = useChatStore();
 
   useEffect(() => {
-    getAllContacts();
-  }, [getAllContacts]);
+    setContactSearch(search);
+    getAllContacts(search);
+  }, [getAllContacts, search, setContactSearch]);
 
   if (isUsersLoading) return <UsersLoadingSkeleton />;
+  if (allContacts.length === 0)
+    return (
+      <p className="text-center text-xs py-10" style={{ color: 'var(--fg-subtle)' }}>
+        No contacts found
+      </p>
+    );
 
   return (
-    <>
-      {allContacts.map((contact) => (
-        <div
+    <div className="space-y-0.5">
+      {allContacts.map(contact => (
+        <button
           key={contact._id}
-          className="bg-cyan-500/10 p-4 rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors"
           onClick={() => setSelectedUser(contact)}
+          className="contact-button w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150"
         >
-          <div className="flex items-center gap-3">
-            <div
-              className={`avatar ${onlineUsers.includes(contact._id) ? "online" : "offline"}`}
-            >
-              <div className="size-12 rounded-full">
-                <img src={contact.profilePic || "/avatar.png"} />
-              </div>
-            </div>
-            <h4 className="text-slate-200 font-medium">{contact.fullName}</h4>
+          <div
+            className="size-10 rounded-full overflow-hidden flex-shrink-0"
+            style={{ border: '2px solid var(--border-md)' }}
+          >
+            <img src={contact.profilePic || "/avatar.png"} alt={contact.fullName} className="size-full object-cover" />
           </div>
-        </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate" style={{ color: 'var(--fg)', fontFamily: "'Syne',sans-serif" }}>
+              {contact.fullName}
+            </p>
+          </div>
+        </button>
       ))}
-    </>
+    </div>
   );
 }
+
 export default ContactList;

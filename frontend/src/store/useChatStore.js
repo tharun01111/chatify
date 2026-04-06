@@ -31,6 +31,10 @@ export const useChatStore = create((set, get) => ({
   cursor: null,
   hasMore: false,
   isLoadingMore: false,
+  contactSearch: "",
+  chatSearch: "",
+  contactSearchRequestId: 0,
+  chatSearchRequestId: 0,
 
   toggleSound: () => {
     localStorage.setItem("isSoundEnabled", !get().isSoundEnabled);
@@ -39,6 +43,8 @@ export const useChatStore = create((set, get) => ({
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSelectedUser: (selectedUser) => set({ selectedUser }),
+  setContactSearch: (contactSearch) => set({ contactSearch }),
+  setChatSearch: (chatSearch) => set({ chatSearch }),
 
   findUserById: (userId) => {
     const normalizedUserId = getUserId(userId);
@@ -208,27 +214,51 @@ export const useChatStore = create((set, get) => ({
     socket.off("newMessage");
   },
 
-  getAllContacts: async () => {
-    set({ isUsersLoading: true });
+  getAllContacts: async (searchOverride) => {
+    const requestId = get().contactSearchRequestId + 1;
+    set({ isUsersLoading: true, contactSearchRequestId: requestId });
     try {
-      const res = await axiosInstance.get("/message/contacts");
-      set({ allContacts: res.data });
+      const search = (searchOverride ?? get().contactSearch).trim();
+      const params = new URLSearchParams({ limit: "50" });
+      if (search) params.set("search", search);
+
+      const res = await axiosInstance.get(`/message/contacts?${params.toString()}`);
+
+      if (get().contactSearchRequestId === requestId) {
+        set({ allContacts: res.data });
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load contacts");
+      if (get().contactSearchRequestId === requestId) {
+        toast.error(error.response?.data?.message || "Failed to load contacts");
+      }
     } finally {
-      set({ isUsersLoading: false });
+      if (get().contactSearchRequestId === requestId) {
+        set({ isUsersLoading: false });
+      }
     }
   },
 
-  getMyChatPartners: async () => {
-    set({ isUsersLoading: true });
+  getMyChatPartners: async (searchOverride) => {
+    const requestId = get().chatSearchRequestId + 1;
+    set({ isUsersLoading: true, chatSearchRequestId: requestId });
     try {
-      const res = await axiosInstance.get("/message/chats");
-      set({ chats: res.data });
+      const search = (searchOverride ?? get().chatSearch).trim();
+      const params = new URLSearchParams({ limit: "50" });
+      if (search) params.set("search", search);
+
+      const res = await axiosInstance.get(`/message/chats?${params.toString()}`);
+
+      if (get().chatSearchRequestId === requestId) {
+        set({ chats: res.data });
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load chats");
+      if (get().chatSearchRequestId === requestId) {
+        toast.error(error.response?.data?.message || "Failed to load chats");
+      }
     } finally {
-      set({ isUsersLoading: false });
+      if (get().chatSearchRequestId === requestId) {
+        set({ isUsersLoading: false });
+      }
     }
   },
 
@@ -291,6 +321,10 @@ export const useChatStore = create((set, get) => ({
   sendMessage: async (messageData) => {
     const { selectedUser, messages } = get();
     const { authUser } = useAuthStore.getState();
+
+    if (!selectedUser?._id || !authUser?._id) {
+      return null;
+    }
 
     const tempId = `temp-${Date.now()}`;
 

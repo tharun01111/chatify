@@ -1,41 +1,28 @@
-import BorderAnimatedContainer from "../components/BorderAnimatedContainer.jsx";
+import { useState } from "react";
 import { useChatStore } from "../store/useChatStore.js";
-import ProfileHeader from "../components/ProfileHeader";
-import ActiveTabSwitch from "../components/AcitveTabSwitch.jsx"
-import ChatList from "../components/ChatList";
-import ContactList from "../components/ContactList";
-import CallList from "../components/CallList";
+import Sidebar from "../components/Sidebar.jsx";
 import ChatContainer from "../components/ChatContainer";
 import NoConversationPlaceholder from "../components/NoConversationPlaceholder";
+import ProfileModal from "../components/ProfileModal.jsx";
 
 function ChatPage() {
-  const { activeTab, selectedUser } = useChatStore();
-  
-  const renderSidebarContent = () => {
-    switch(activeTab) {
-      case "chats": return <ChatList />;
-      case "contacts": return <ContactList />;
-      case "calls": return <CallList />;
-      default: return <ChatList />;
-    }
-  };
+  const { selectedUser } = useChatStore();
+  const [showProfile, setShowProfile] = useState(false);
 
   return (
-    <div className="relative w-full max-w-6xl h-[650px]">
-      <BorderAnimatedContainer>
-        {/* Left side */}
-        <div className="w-80 bg-slate-800/50 backdrop-blur-sm flex flex-col">
-          <ProfileHeader />
-          <ActiveTabSwitch/>
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {renderSidebarContent()}
-          </div>
-        </div>
-        {/* Right Side */}
-        <div className="flex-1 flex flex-col bg-slate-900/50 backdrop-blur-sm">
-          {selectedUser ? <ChatContainer /> : <NoConversationPlaceholder />}
-        </div>
-      </BorderAnimatedContainer>
+    <div className="chat-shell flex w-screen h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
+      <div className={`${selectedUser ? "hidden md:flex" : "flex"} h-full`}>
+        <Sidebar onOpenProfile={() => setShowProfile(true)} />
+      </div>
+
+      <div
+        className={`${selectedUser ? "flex" : "hidden md:flex"} flex-1 flex-col overflow-hidden`}
+        style={{ background: 'var(--bg)', borderLeft: '1px solid var(--border)' }}
+      >
+        {selectedUser ? <ChatContainer /> : <NoConversationPlaceholder />}
+      </div>
+
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
     </div>
   );
 }

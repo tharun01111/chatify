@@ -1,132 +1,90 @@
-import { useEffect, useState } from "react";
-import { useAuthStore } from "../store/useAuthStore";
-import BorderAnimatedContainer from "../components/BorderAnimatedContainer";
-import PageLoader from "../components/PageLoader";
-import {
-  MessageCircleIcon,
-  LockIcon,
-  MailIcon,
-  LoaderIcon,
-} from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Loader2, Lock, Mail, MessageCircle } from "lucide-react";
+import BorderAnimatedContainer from "../components/BorderAnimatedContainer";
+import { useAuthStore } from "../store/useAuthStore";
 
 function LoginPage() {
-  const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  console.log({ authUser });
-
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const { login, isLoggingIn } = useAuthStore();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
     login(formData);
   };
 
-  if (isCheckingAuth) return <PageLoader />;
   return (
-    <div className="w-full flex items-center justify-center p-4 bg-slate-900">
-      <div className="relative w-full max-w-6xl h-full">
+    <div className="w-full flex items-center justify-center p-4" style={{ background: "var(--bg)" }}>
+      <div className="relative w-full max-w-4xl">
         <BorderAnimatedContainer>
           <div className="w-full flex flex-col md:flex-row">
-            {/* FORM CLOUMN - LEFT SIDE */}
-            <div className="md:w-1/2 p-8 flex items-center justify-center md:border-r border-slate-600/30">
-              <div className="w-full max-w-md">
-                {/* HEADING TEXT */}
+            <div className="md:w-1/2 p-8 flex items-center justify-center" style={{ borderRight: "1px solid var(--border)" }}>
+              <div className="w-full max-w-sm">
                 <div className="text-center mb-8">
-                  <MessageCircleIcon className="w-12 h-12 mx-auto text-slate-400 mb-4" />
-                  <h2 className="text-2xl font-bold text-slate-200 mb-2">
-                    Welcome Back
+                  <div
+                    className="size-12 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                    style={{ background: "rgba(129,140,248,0.12)", border: "1px solid var(--accent-border)" }}
+                  >
+                    <MessageCircle size={22} style={{ color: "var(--accent)" }} />
+                  </div>
+                  <h2 className="text-xl font-bold mb-1" style={{ color: "var(--fg)", fontFamily: "'Syne',sans-serif" }}>
+                    Welcome back
                   </h2>
-                  <p className="text-slate-400">Login to access your account</p>
+                  <p className="text-sm" style={{ color: "var(--fg-subtle)" }}>Sign in to your account</p>
                 </div>
 
-                {/* FORM */}
-                <form onSubmit={handleSubmit} className="space-y-6">
-
-                  {/* EMAIL INPUT */}
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
-                    <label className="auth-input-label">Email</label>
+                    <label htmlFor="login-email" className="auth-input-label">Email</label>
                     <div className="relative">
-                      <MailIcon className="auth-input-icon" />
-
+                      <Mail className="auth-input-icon" />
                       <input
+                        id="login-email"
                         type="email"
                         value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
+                        onChange={(event) => setFormData({ ...formData, email: event.target.value })}
                         className="input"
-                        placeholder="johndoe@gmail.com"
+                        placeholder="you@example.com"
                       />
                     </div>
                   </div>
 
-                  {/* PASSWORD INPUT */}
                   <div>
-                    <label className="auth-input-label">Password</label>
+                    <label htmlFor="login-password" className="auth-input-label">Password</label>
                     <div className="relative">
-                      <LockIcon className="auth-input-icon" />
-
+                      <Lock className="auth-input-icon" />
                       <input
+                        id="login-password"
                         type="password"
                         value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
+                        onChange={(event) => setFormData({ ...formData, password: event.target.value })}
                         className="input"
                         placeholder="Enter your password"
                       />
                     </div>
                   </div>
 
-                  {/* SUBMIT BUTTON */}
-                  <button
-                    className="auth-btn"
-                    type="submit"
-                    disabled={isLoggingIn}
-                  >
-                    {isLoggingIn ? (
-                      <LoaderIcon className="w-full h-5 animate-spin text-center" />
-                    ) : (
-                      "Sign In"
-                    )}
+                  <button type="submit" className="auth-btn" disabled={isLoggingIn}>
+                    {isLoggingIn ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Sign In"}
                   </button>
                 </form>
 
-                <div className="mt-6 text-center">
-                  <Link to="/signup" className="auth-link">
-                    Don't have an account? Sign Up
-                  </Link>
-                </div>
+                <p className="mt-5 text-center text-sm" style={{ color: "var(--fg-subtle)" }}>
+                  No account? <Link to="/signup" className="auth-link">Create one</Link>
+                </p>
               </div>
             </div>
 
-            {/* FORM ILLUSTRATION - RIGHT SIDE */}
-            <div className="hidden md:w-1/2 md:flex items-center justify-center p-6 bg-gradient-to-bl from-slate-800/20 to-transparent">
-              <div>
-                <img
-                  src="/login.png"
-                  alt="People using mobile devices"
-                  className="w-full h-auto object-contain"
-                />
-                <div className="mt-6 text-center">
-                  <h3 className="text-xl font-medium text-cyan-400">
-                    Connect Anytime, Anywhere
-                  </h3>
-
-                  <div className="mt-4 flex justify-center gap-4">
-                    <span className="auth-badge">Free</span>
-                    <span className="auth-badge">Easy Setup</span>
-                    <span className="auth-badge">Private</span>
-                  </div>
+            <div className="hidden md:flex md:w-1/2 items-center justify-center p-8" style={{ background: "var(--bg)" }}>
+              <div className="text-center">
+                <img src="/login.png" alt="Login illustration" className="w-full max-w-xs mx-auto object-contain mb-6" />
+                <h3 className="text-base font-bold mb-3" style={{ color: "var(--fg)", fontFamily: "'Syne',sans-serif" }}>
+                  Connect Anytime, Anywhere
+                </h3>
+                <div className="flex justify-center gap-2 flex-wrap">
+                  <span className="auth-badge">Realtime</span>
+                  <span className="auth-badge">Easy Setup</span>
+                  <span className="auth-badge">Private</span>
                 </div>
               </div>
             </div>

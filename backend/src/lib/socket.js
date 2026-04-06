@@ -17,36 +17,95 @@ const io = new Server(server, {
 
 io.use(socketAuthMiddleware);
 
-export function getRecieverSocketId(userId) {
-  return userSocketMap[userId];
+const userSocketMap = {};
+export const activeCalls = {};
+export const pendingCalls = {};
+export const pendingCallTimers = {};
+
+export function getReceiverSocketIds(userId) {
+  return Array.from(userSocketMap[userId] || []);
 }
 
-const userSocketMap = {};
-export const activeCalls = {}; // ✅ add this! tracks who is in call with who
+function addUserSocket(userId, socketId) {
+  if (!userSocketMap[userId]) {
+    userSocketMap[userId] = new Set();
+  }
+
+  userSocketMap[userId].add(socketId);
+}
+
+function removeUserSocket(userId, socketId) {
+  const userSockets = userSocketMap[userId];
+
+  if (!userSockets) return;
+
+  userSockets.delete(socketId);
+
+  if (userSockets.size === 0) {
+    delete userSocketMap[userId];
+  }
+}
+
+function clearPendingCall(userId) {
+  const peerId = pendingCalls[userId];
+
+  if (!peerId) return null;
+
+  const userTimer = pendingCallTimers[userId];
+  const peerTimer = pendingCallTimers[peerId];
+
+  if (userTimer) clearTimeout(userTimer);
+  if (peerTimer && peerTimer !== userTimer) clearTimeout(peerTimer);
+
+  delete pendingCalls[userId];
+  delete pendingCalls[peerId];
+  delete pendingCallTimers[userId];
+  delete pendingCallTimers[peerId];
+
+  return peerId;
+}
 
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.user.fullName);
 
   const userId = socket.userId;
-  userSocketMap[userId] = socket.id;
+  addUserSocket(userId, socket.id);
 
-  setupCallHandlers(io, socket, userSocketMap, activeCalls); // ✅ pass activeCalls
+  setupCallHandlers(
+    io,
+    socket,
+    userSocketMap,
+    activeCalls,
+    pendingCalls,
+    pendingCallTimers,
+    clearPendingCall,
+  );
 
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("disconnect", () => {
     console.log("A user disconnected: ", socket.user.fullName);
-    delete userSocketMap[userId];
+    removeUserSocket(userId, socket.id);
 
-    // ✅ Only notify the PEER not everyone!
-    const peerId = activeCalls[userId];
-    if (peerId) {
-      const peerSocketId = userSocketMap[peerId];
-      if (peerSocketId) {
-        io.to(peerSocketId).emit("call_ended_abruptly", { userId });
+    const pendingPeerId = clearPendingCall(userId);
+    if (pendingPeerId) {
+      const pendingPeerSocketIds = getReceiverSocketIds(pendingPeerId);
+      if (pendingPeerSocketIds.length > 0) {
+        io.to(pendingPeerSocketIds).emit("call_rejected", {
+          calleeId: userId,
+          reason: "unavailable",
+        });
+      }
+    }
+
+    const activePeerId = activeCalls[userId];
+    if (activePeerId) {
+      const activePeerSocketIds = getReceiverSocketIds(activePeerId);
+      if (activePeerSocketIds.length > 0) {
+        io.to(activePeerSocketIds).emit("call_ended_abruptly", { userId });
       }
       delete activeCalls[userId];
-      delete activeCalls[peerId];
+      delete activeCalls[activePeerId];
     }
 
     io.emit("getOnlineUsers", Object.keys(userSocketMap));

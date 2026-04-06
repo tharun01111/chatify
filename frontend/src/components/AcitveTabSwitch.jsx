@@ -1,30 +1,36 @@
 import { useChatStore } from "../store/useChatStore";
 
-function AcitveTabSwitch() {
+function ActiveTabSwitch() {
   const { activeTab, setActiveTab } = useChatStore();
 
   return (
-    <div className="tabs tabs-boxed bg-transparent p-2 m-2">
-      <button
-        onClick={() => setActiveTab("chats")}
-        className={`tab ${activeTab === "chats" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-400"}`}
+    <div className="px-4 pb-3 flex-shrink-0">
+      <div
+        className="flex rounded-xl p-1 gap-1"
+        style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
       >
-        Chats
-      </button>
-      <button
-        onClick={() => setActiveTab("contacts")}
-        className={`tab ${activeTab === "contacts" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-400"}`}
-      >
-        Contacts
-      </button>
-      <button
-        onClick={() => setActiveTab("calls")}
-        className={`tab ${activeTab === "calls" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-400"}`}
-      >
-        Calls
-      </button>
+        {["chats", "contacts"].map((tab) => {
+          const active = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              aria-pressed={active}
+              className="flex-1 py-1.5 rounded-lg text-xs font-bold tracking-wide capitalize transition-all duration-200"
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                background: active ? 'var(--accent)' : 'transparent',
+                color: active ? '#fff' : 'var(--fg-subtle)',
+                boxShadow: active ? '0 2px 12px rgba(129,140,248,0.35)' : 'none',
+              }}
+            >
+              {tab}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-export default AcitveTabSwitch;
+export default ActiveTabSwitch;
